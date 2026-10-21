@@ -37,7 +37,7 @@ summary{cursor:pointer;margin-top:10px;font-size:15px}
 textarea,input{font:15px inherit;font-family:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--mask);border-radius:8px;padding:9px 10px;max-width:100%}
 textarea{width:100%;min-height:100px;margin-top:8px}
 .form{margin-top:12px;padding-top:12px;border-top:2px solid var(--line)}
-.form input{width:150px}.form #fn{width:260px}
+.form input{width:150px}
 #code{font-weight:700}
 .item{display:grid;grid-template-columns:44px 90px 1fr auto;gap:8px;align-items:center;background:var(--row);border-top:2px solid var(--line);padding:6px 10px 6px 0}
 .open{all:unset;cursor:pointer;display:contents}
@@ -72,10 +72,8 @@ textarea{width:100%;min-height:100px;margin-top:8px}
    <div class="r">
     <label>Kurssi <input id="fc" placeholder="esim. 7" aria-label="Kurssi"></label>
     <label>Kappale <input id="fk" placeholder="esim. 2.1" aria-label="Kappale"></label>
-    <label>Nimi <input id="fn" placeholder="valinnainen" aria-label="Listan nimi"></label>
    </div>
    <div class="r" style="margin-top:10px">
-    <span>Tunnus: <span id="code">–</span></span>
     <button class="btn" id="save">Tallenna</button>
     <button class="btn" id="cancel">Peruuta</button>
    </div>
@@ -164,7 +162,7 @@ function home(){
    k.onchange=function(){if(k.checked)sel[id]=1;else delete sel[id];updateBar()};it.appendChild(k);
    var o=document.createElement("button");o.className="open";
    var cc=document.createElement("span");cc.className="c";cc.textContent=codeOf(d)||"–";
-   var nm=document.createElement("span");nm.className="nm";nm.textContent=d.name||"Nimetön";
+   var nm=document.createElement("span");nm.className="nm";nm.textContent=d.name||"";
    var sm=document.createElement("small");sm.textContent=d.en.length+" sanaa";nm.appendChild(sm);
    o.appendChild(cc);o.appendChild(nm);o.onclick=function(){openList(id)};it.appendChild(o);
    var a=document.createElement("div");a.className="a";
@@ -212,12 +210,12 @@ function stage(text,name){
  if(p.length&&/^(english|englanti|finnish|suomi|word|sana|term|kieli|lang)/i.test(p[0][0])){names=[p[0][0],p[0][1]];p.shift()}
  if(!p.length){msg("Sanoja ei löytynyt. Tarkista, että rivillä on kaksi sanaa erotettuna puolipisteellä, tabilla tai pilkulla.");return}
  pending={en:p.map(function(r){return r[0]}),fi:p.map(function(r){return r[1]}),n:names};
- editId=null;$("fc").value="";$("fk").value="";$("fn").value=name||"";
+ editId=null;$("fc").value="";$("fk").value="";
  msg("");showForm()}
 function showForm(){$("form").hidden=false;$("save").textContent=editId?"Tallenna muutokset":"Tallenna";prev();$("fc").focus()}
-function editForm(id){var d=docs[id];pending=null;editId=id;$("fc").value=d.course||"";$("fk").value=d.chapter||"";$("fn").value=d.name||"";msg("");showForm();window.scrollTo(0,0)}
+function editForm(id){var d=docs[id];pending=null;editId=id;$("fc").value=d.course||"";$("fk").value=d.chapter||"";msg("");showForm();window.scrollTo(0,0)}
 function clean(v){return v.replace(/\s+/g,"").replace(/[^0-9A-Za-zÅÄÖåäö.\-_]/g,"").replace(/^\.+|\.+$/g,"")}
-function prev(){var c=clean($("fc").value),k=clean($("fk").value);$("code").textContent=c?(c+(k?"."+k:"")):"–"}
+function prev(){}
 ["fc","fk"].forEach(function(i){$(i).oninput=prev});
 $("pick").onclick=function(){$("file").click()};
 $("file").onchange=function(e){var f=e.target.files[0];if(!f)return;var rd=new FileReader();
@@ -226,11 +224,11 @@ $("file").onchange=function(e){var f=e.target.files[0];if(!f)return;var rd=new F
 $("usePaste").onclick=function(){stage($("paste").value,"")};
 $("cancel").onclick=function(){$("form").hidden=true;pending=null;editId=null;msg("")};
 $("save").onclick=function(){
- var c=clean($("fc").value),k=clean($("fk").value),nm=$("fn").value.trim();
+ var c=clean($("fc").value),k=clean($("fk").value);
  if(!c){msg("Kurssi puuttuu.");$("fc").focus();return}
- if(editId){var d=docs[editId];d.course=c;d.chapter=k;d.name=nm||d.name;persist(editId)}
+ if(editId){var d=docs[editId];d.course=c;d.chapter=k;persist(editId)}
  else if(pending){var id="l"+Date.now().toString(36);
-  docs[id]={course:c,chapter:k,name:nm||"Lista "+(c+(k?"."+k:"")),en:pending.en,fi:pending.fi,n:pending.n,order:null,hEn:[],hFi:[],cEn:false,cFi:false,ts:Date.now()};persist(id)}
+  docs[id]={course:c,chapter:k,name:"",en:pending.en,fi:pending.fi,n:pending.n,order:null,hEn:[],hFi:[],cEn:false,cFi:false,ts:Date.now()};persist(id)}
  $("form").hidden=true;pending=null;editId=null;$("paste").value="";msg("");home()};
 
 /* ---------- harjoittelu ---------- */
