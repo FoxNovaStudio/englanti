@@ -48,6 +48,7 @@ textarea{width:100%;min-height:100px;margin-top:8px}
 #sync,#msg{font-size:14px;opacity:.75}
 .note{font-size:14px;opacity:.7;margin:10px 4px 0}
 .bar{position:sticky;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);margin-top:14px;padding:10px 14px;background:var(--head);border-radius:10px;display:flex;flex-direction:column;gap:8px;z-index:3;box-shadow:0 0 0 2px var(--bg)}
+.bar .btn{background:var(--row)}
 .bar span{font-weight:700;margin-right:auto}
 .chk{width:22px;height:22px;accent-color:#0a7d78;margin:0 0 0 14px}
 .h2r{display:flex;align-items:center;gap:12px}
@@ -80,7 +81,7 @@ textarea{width:100%;min-height:100px;margin-top:8px}
   </div>
  </div>
  <div id="groups"></div>
- <div class="bar" id="bar" hidden><span id="selinfo"></span><div class="r"><button class="btn" id="goMix">Kurssin järjestys</button><button class="btn" id="goShuf">Sekoita</button><button class="btn" id="goAbc">Aakkosjärjestys</button><button class="btn" id="clrSel">Tyhjennä valinta</button></div></div>
+ <div class="bar" id="bar" hidden><span id="selinfo"></span><div class="r"><button class="btn" id="goShuf">Sekoita</button><button class="btn" id="goAbc">Aakkosjärjestys</button><button class="btn" id="clrSel">Tyhjennä valinta</button></div></div>
 </section>
 
 <section id="prac" hidden>
@@ -263,7 +264,7 @@ $("showAll").onclick=function(){colHid=[false,false];rows.forEach(function(r){r.
 $("shuf").onclick=function(){for(var i=rows.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=rows[i];rows[i]=rows[j];rows[j]=t}render();changed()};
 $("abc").onclick=function(){var d=docs[cur];rows.sort(function(a,b){return d.en[a.i].localeCompare(d.en[b.i],"en")});render();changed()};
 $("back").onclick=function(){flush();home()};
-$("goMix").onclick=function(){openMix("")};$("goShuf").onclick=function(){openMix("shuf")};$("goAbc").onclick=function(){openMix("abc")};$("clrSel").onclick=function(){sel={};home()};
+$("goShuf").onclick=function(){openMix("shuf")};$("goAbc").onclick=function(){openMix("abc")};$("clrSel").onclick=function(){sel={};home()};
 $("ord").onclick=function(){rows.sort(function(a,b){return a.i-b.i});render();changed()};
 init();
 </script></body></html>
