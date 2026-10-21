@@ -47,7 +47,7 @@ textarea{width:100%;min-height:100px;margin-top:8px}
 .top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
 #sync,#msg{font-size:14px;opacity:.75}
 .note{font-size:14px;opacity:.7;margin:10px 4px 0}
-.bar{position:sticky;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);margin-top:14px;padding:10px 14px;background:var(--head);border-radius:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;z-index:3;box-shadow:0 0 0 2px var(--bg)}
+.bar{position:sticky;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);margin-top:14px;padding:10px 14px;background:var(--head);border-radius:10px;display:flex;flex-direction:column;gap:8px;z-index:3;box-shadow:0 0 0 2px var(--bg)}
 .bar span{font-weight:700;margin-right:auto}
 .chk{width:22px;height:22px;accent-color:#0a7d78;margin:0 0 0 14px}
 .h2r{display:flex;align-items:center;gap:12px}
@@ -57,7 +57,7 @@ textarea{width:100%;min-height:100px;margin-top:8px}
 
 <section id="home">
  <h1>Sanalistat</h1>
- <div class="r" style="margin:-6px 4px 12px"><span id="who"></span><button class="btn sm" id="cp" hidden>Kopioi oma linkki</button></div>
+ <div class="r" style="margin:-6px 4px 12px"><button class="btn sm" id="cp" hidden>Kopioi oma linkki</button></div>
  <div class="load">
   <div class="r">
    <button class="btn" id="pick">Lataa sanalista (CSV)</button>
@@ -82,27 +82,21 @@ textarea{width:100%;min-height:100px;margin-top:8px}
   </div>
  </div>
  <div id="groups"></div>
- <div class="bar" id="bar" hidden><span id="selinfo"></span><button class="btn sm" id="goMix">Harjoittele valitut</button><button class="btn sm" id="goShuf">Sekoita valitut</button><button class="btn sm" id="goAbc">Aakkosjärjestys</button><button class="btn sm" id="clrSel">Tyhjennä valinta</button></div>
+ <div class="bar" id="bar" hidden><span id="selinfo"></span><div class="r"><button class="btn" id="goMix">Kurssin järjestys</button><button class="btn" id="goShuf">Sekoita</button><button class="btn" id="goAbc">Aakkosjärjestys</button><button class="btn" id="clrSel">Tyhjennä valinta</button></div></div>
 </section>
 
 <section id="prac" hidden>
  <div class="top"><button class="btn" id="back">← Etusivu</button><strong id="ttl"></strong><span id="sync2"></span></div>
+ <div class="r" style="margin:0 0 12px"><button class="btn" id="shuf">Sekoita</button><button class="btn" id="abc">Aakkosjärjestys</button><button class="btn" id="ord">Kurssin järjestys</button><button class="btn" id="hideAll">Piilota kaikki</button><button class="btn" id="showAll">Näytä kaikki</button></div>
  <div class="wrap"><div class="grid">
   <div class="head">
    <div><span id="n0">English</span> <button class="ic" id="hEn" title="Piilota / näytä englanti" aria-label="Piilota tai näytä englanti"><svg viewBox="0 0 24 24"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/><path d="M3 21 21 3"/></svg></button></div>
    <div class="tools">
     <span style="margin-right:auto;display:flex;align-items:center;gap:10px"><span id="n1">Finnish</span> <button class="ic" id="hFi" title="Piilota / näytä suomi" aria-label="Piilota tai näytä suomi"><svg viewBox="0 0 24 24"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/><path d="M3 21 21 3"/></svg></button></span>
-    <button class="ic" id="shuf" title="Sekoita järjestys" aria-label="Sekoita järjestys"><svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button>
-    <button class="ic" id="abc" title="Aakkosjärjestys" aria-label="Aakkosjärjestys"><svg viewBox="0 0 24 24"><path d="M6 4v16m0 0-4-4m4 4 4-4"/><path d="M15 9V6.5a2.5 2.5 0 0 1 5 0V9m-5-2h5M15 20l2.5-5 2.5 5m-4-1.5h3" style="stroke-width:1.6"/></svg></button>
-    <button class="ic" id="ord" title="Kurssin ja kappaleen järjestys" aria-label="Kurssin ja kappaleen järjestys"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></button>
-    <span class="sep"></span>
-    <button class="ic" id="hideAll" title="Piilota kaikki" aria-label="Piilota kaikki"><svg viewBox="0 0 24 24"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/><path d="M3 21 21 3"/></svg></button>
-    <button class="ic" id="showAll" title="Näytä kaikki" aria-label="Näytä kaikki"><svg viewBox="0 0 24 24"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg></button>
    </div>
   </div>
   <div id="rows"></div>
  </div></div>
- <p class="note">Napauta sanaa piilottaaksesi tai näyttääksesi sen. Piilotukset ja järjestys tallentuvat automaattisesti.</p>
 </section>
 </main>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -121,7 +115,7 @@ var configured=!!(firebaseConfig&&firebaseConfig.databaseURL&&firebaseConfig.dat
 function lget(){try{return JSON.parse(localStorage.getItem(LK)||"{}")}catch(e){return{}}}
 function lset(o){try{localStorage.setItem(LK,JSON.stringify(o))}catch(e){}}
 function sync(t){$("sync").textContent=t;$("sync2").textContent=t}
-function enq(fn){q=q.then(fn).then(function(){sync(online?"Tallennettu pilveen":"Tallennettu tähän selaimeen")},function(e){sync("Tallennus epäonnistui"+(e&&e.code?" ("+e.code+")":""))});return q}
+function enq(fn){q=q.then(fn).then(function(){sync("")},function(e){sync("Tallennus epäonnistui"+(e&&e.code?" ("+e.code+")":""))});return q}
 function pth(id){return "lists/"+code+"/"+id}
 function persist(id){var d=docs[id];if(d.mix){d=Object.assign({},d);delete d.en;delete d.fi;delete d.n}
  return enq(function(){if(online)return fdb.ref(pth(id)).set(d);var o=lget();o[id]=d;lset(o)})}
@@ -142,11 +136,10 @@ async function init(){
   try{localStorage.setItem("sanalista_code",code)}catch(e){}
   online=true}catch(e){online=false}}
  await loadFor();
- $("who").textContent=online?"Listat tallentuvat pilveen tämän sivun linkin taakse.":"Pilvi ei käytössä, tallennus vain tähän selaimeen.";
  $("cp").hidden=!online;
- sync(online?"Tallennus pilvessä":"Tallennus vain tähän selaimeen");home()}
+ home()}
 $("cp").onclick=function(){var u=location.href;
- (navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(function(){msg("Linkki kopioitu. Avaa se toisella laitteella.")},function(){prompt("Kopioi tämä linkki:",u)})};
+ (navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(function(){msg("Linkki kopioitu.")},function(){prompt("Kopioi tämä linkki:",u)})};
 
 /* ---------- etusivu ---------- */
 function codeOf(d){return d.course+(d.chapter?"."+d.chapter:"")}
@@ -178,7 +171,9 @@ function home(){
    var e=document.createElement("button");e.className="btn sm";e.textContent="Muokkaa tunnusta";e.onclick=function(){editForm(id)};
    var x=document.createElement("button");x.className="btn sm";x.textContent=armed===id?"Varmista poisto":"Poista";
    x.onclick=function(){if(armed===id){armed=null;remove(id);home()}else{armed=id;home()}};
-   a.appendChild(e);a.appendChild(x);it.appendChild(a);g.appendChild(it)})})}
+   a.appendChild(e);a.appendChild(x);
+   if(armed===id){var cx=document.createElement("button");cx.className="btn sm";cx.textContent="Peruuta";cx.onclick=function(){armed=null;home()};a.appendChild(cx)}
+   it.appendChild(a);g.appendChild(it)})})}
 
 /* ---------- valinta ja yhdistäminen ---------- */
 var sel={};
@@ -218,7 +213,7 @@ function stage(text,name){
  if(!p.length){msg("Sanoja ei löytynyt. Tarkista, että rivillä on kaksi sanaa erotettuna puolipisteellä, tabilla tai pilkulla.");return}
  pending={en:p.map(function(r){return r[0]}),fi:p.map(function(r){return r[1]}),n:names};
  editId=null;$("fc").value="";$("fk").value="";$("fn").value=name||"";
- msg(p.length+" sanaparia luettu. Anna kurssi ja kappale.");showForm()}
+ msg("");showForm()}
 function showForm(){$("form").hidden=false;$("save").textContent=editId?"Tallenna muutokset":"Tallenna";prev();$("fc").focus()}
 function editForm(id){var d=docs[id];pending=null;editId=id;$("fc").value=d.course||"";$("fk").value=d.chapter||"";$("fn").value=d.name||"";msg("");showForm();window.scrollTo(0,0)}
 function clean(v){return v.replace(/\s+/g,"").replace(/[^0-9A-Za-zÅÄÖåäö.\-_]/g,"").replace(/^\.+|\.+$/g,"")}
@@ -236,7 +231,7 @@ $("save").onclick=function(){
  if(editId){var d=docs[editId];d.course=c;d.chapter=k;d.name=nm||d.name;persist(editId)}
  else if(pending){var id="l"+Date.now().toString(36);
   docs[id]={course:c,chapter:k,name:nm||"Lista "+(c+(k?"."+k:"")),en:pending.en,fi:pending.fi,n:pending.n,order:null,hEn:[],hFi:[],cEn:false,cFi:false,ts:Date.now()};persist(id)}
- $("form").hidden=true;pending=null;editId=null;$("paste").value="";msg("Tallennettu.");home()};
+ $("form").hidden=true;pending=null;editId=null;$("paste").value="";msg("");home()};
 
 /* ---------- harjoittelu ---------- */
 var cur=null,rows=[],colHid=[false,false],tm=null;
