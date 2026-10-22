@@ -62,7 +62,7 @@ textarea{width:100%;min-height:100px;margin-top:8px}
  <div class="r" style="margin:-6px 4px 12px"><button class="btn sm" id="cp" hidden>Kopioi oma linkki</button></div>
  <div class="load">
   <div class="r">
-   <button class="btn" id="pick">Lataa sanalistoja (CSV)</button><button class="btn" id="allBtn" hidden>Kaikki sanat</button>
+   <button class="btn" id="pick">Lataa sanalistoja (CSV)</button>
    <input type="file" id="file" multiple accept=".csv,.tsv,.txt,text/csv,text/plain" class="sr" tabindex="-1">
    <span id="msg" role="status"></span><span id="sync"></span>
   </div>
@@ -151,8 +151,15 @@ var armed=null;
 function home(){
  $("prac").hidden=true;$("home").hidden=false;cur=null;
  updateBar();var g=$("groups");g.innerHTML="";
- var ids=Object.keys(docs).filter(function(i){return !docs[i].mix});$("allBtn").hidden=!ids.length;
+ var ids=Object.keys(docs).filter(function(i){return !docs[i].mix});
  if(!ids.length){var p=document.createElement("p");p.className="note";p.textContent="Ei vielä listoja. Lataa ensimmäinen CSV-tiedosto yllä.";g.appendChild(p);return}
+ var tot=0;ids.forEach(function(i){tot+=docs[i].en.length});
+ var ai=document.createElement("div");ai.className="item";ai.appendChild(document.createElement("span"));
+ var ao=document.createElement("button");ao.className="open";
+ var ac=document.createElement("span");ac.className="c";ac.textContent="Kaikki";
+ var an=document.createElement("span");an.className="nm";an.textContent="Kaikki kurssit ja kappaleet";
+ var asm=document.createElement("small");asm.textContent=tot+" sanaa";an.appendChild(asm);
+ ao.appendChild(ac);ao.appendChild(an);ao.onclick=function(){openMix("",ids,"Kaikki sanat")};ai.appendChild(ao);g.appendChild(ai);
  var by={};ids.forEach(function(id){var c=docs[id].course||"";(by[c]=by[c]||[]).push(id)});
  Object.keys(by).sort(function(a,b){if(!a)return 1;if(!b)return -1;return nat(a,b)}).forEach(function(c){
   var h=document.createElement("h2");h.className="h2r";var ht=document.createElement("span");ht.textContent=c?"Kurssi "+c:"Ilman kurssia";h.appendChild(ht);
@@ -182,13 +189,21 @@ function selIds(){return Object.keys(sel).filter(function(i){return docs[i]&&!do
 function updateBar(){var ids=selIds(),n=0;ids.forEach(function(i){n+=docs[i].en.length});$("bar").hidden=!ids.length;$("selinfo").textContent=ids.length+" listaa, "+n+" sanaa"}
 function hash(s){var h=5381;for(var i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;return (h>>>0).toString(36)}
 function sortIds(a){return a.filter(function(i){return docs[i]&&!docs[i].mix}).sort(function(a,b){var x=docs[a],y=docs[b];return (!x.course)-(!y.course)||nat(x.course||"",y.course||"")||nat(x.chapter||"",y.chapter||"")})}
+function keyed(en,fi){var c={};return en.map(function(e,i){var k=e+"\u0001"+fi[i];c[k]=(c[k]||0)+1;return k+"#"+c[k]})}
 function openMix(mode,idsIn,label){
  var ids=idsIn?sortIds(idsIn):selIds();if(!ids.length)return;
- var id="m"+hash(ids.join(",")),en=[],fi=[];
+ var id="m"+hash(idsIn&&label?"L:"+label:ids.join(",")),en=[],fi=[];
  ids.forEach(function(i){en=en.concat(docs[i].en);fi=fi.concat(docs[i].fi)});
- var d=docs[id];
- if(!d||d.cnt!==en.length)d={mix:true,ids:ids,cnt:en.length,order:null,hEn:[],hFi:[],cEn:false,cFi:false,ts:Date.now()};
- d.en=en;d.fi=fi;d.n=docs[ids[0]].n;
+ var keys=keyed(en,fi),d=docs[id],fresh={mix:true,ids:ids,cnt:en.length,order:null,hEn:[],hFi:[],cEn:false,cFi:false,ts:Date.now()};
+ if(!d)d=fresh;
+ else if(d.keys&&d.keys.join("|")!==keys.join("|")){
+  var pos={};keys.forEach(function(k,i){pos[k]=i});
+  var mp=function(a){return(a||[]).map(function(i){return pos[d.keys[i]]}).filter(function(x){return x!==undefined})};
+  var ord=d.order&&d.order.length===d.keys.length?mp(d.order):[],inO={};
+  ord.forEach(function(i){inO[i]=1});keys.forEach(function(_,i){if(!inO[i])ord.push(i)});
+  d=Object.assign({},d,{ids:ids,cnt:en.length,order:ord,hEn:mp(d.hEn),hFi:mp(d.hFi)})}
+ else if(!d.keys&&d.cnt!==en.length)d=fresh;
+ d.keys=keys;d.en=en;d.fi=fi;d.n=docs[ids[0]].n;
  d.name=label||"Yhdistetty: "+ids.map(function(i){return codeOf(docs[i])||docs[i].name}).join(", ");
  docs[id]=d;openList(id);
  if(mode==="shuf")$("shuf").click();else if(mode==="abc")$("abc").click()}
@@ -271,7 +286,6 @@ var EYE='<svg viewBox="0 0 24 24"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-
 function allHid(){return rows.length>0&&rows.every(function(r){return r.h[0]&&r.h[1]})}
 function updTgl(){var t=$("tgl"),h=allHid();t.innerHTML=h?EYEX:EYE;t.title=h?"Näytä kaikki":"Piilota kaikki";t.setAttribute("aria-label",t.title)}
 $("tgl").onclick=function(){var v=!allHid();colHid=[v,v];rows.forEach(function(r){r.h=[v,v]});render();changed()};
-$("allBtn").onclick=function(){openMix("",Object.keys(docs),"Kaikki sanat")};
 function setCol(c,v){colHid[c]=v;rows.forEach(function(r){r.h[c]=v});render();changed()}
 $("hEn").onclick=function(){setCol(0,!colHid[0])};
 $("hFi").onclick=function(){setCol(1,!colHid[1])};
