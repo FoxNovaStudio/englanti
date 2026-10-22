@@ -53,6 +53,15 @@ textarea{width:100%;min-height:100px;margin-top:8px}
 .bar span{font-weight:700;margin-right:auto}
 .chk{width:22px;height:22px;accent-color:#0a7d78;margin:0 0 0 14px}
 .h2r{display:flex;align-items:center;gap:12px}
+.tq{background:var(--row);border-radius:10px;padding:14px 16px;margin:0 0 10px}
+.tl{font-size:14px;opacity:.75;margin:0 0 6px}
+.big{font-size:28px;font-weight:700;margin:4px 0 12px;overflow-wrap:anywhere}
+.tin{width:100%;font-size:20px;padding:12px;margin-bottom:10px}
+.fb{min-height:1.4em;font-weight:700;margin-bottom:10px}
+.t-ok{color:var(--done)}.t-bad{color:#e0602a}
+.seg{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.btn[aria-pressed="true"]{box-shadow:inset 0 0 0 3px var(--focus)}
+.tw{font-weight:700;margin-bottom:6px}
 .sr{position:absolute;left:-9999px}
 @media (max-width:560px){.item{grid-template-columns:44px 70px 1fr}.item .a{grid-column:1/-1;justify-content:flex-start;padding-left:18px}}
 </style></head><body><main>
@@ -87,7 +96,7 @@ textarea{width:100%;min-height:100px;margin-top:8px}
 
 <section id="prac" hidden>
  <div class="top"><button class="btn" id="back">← Etusivu</button><strong id="ttl"></strong><span id="sync2"></span></div>
- <div class="r" style="margin:0 0 12px"><button class="ic" id="shuf" title="Sekoita" aria-label="Sekoita"><svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button><button class="ic" id="abc" title="Aakkosjärjestys" aria-label="Aakkosjärjestys"><svg viewBox="0 0 24 24"><path d="M6 4v16m0 0-4-4m4 4 4-4"/><path d="M15 9V6.5a2.5 2.5 0 0 1 5 0V9m-5-2h5M15 20l2.5-5 2.5 5m-4-1.5h3" style="stroke-width:1.6"/></svg></button><button class="ic" id="tgl" title="Piilota kaikki" aria-label="Piilota kaikki"><svg viewBox="0 0 24 24"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg></button></div>
+ <div class="r" style="margin:0 0 12px"><button class="ic" id="shuf" title="Sekoita" aria-label="Sekoita"><svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button><button class="ic" id="abc" title="Aakkosjärjestys" aria-label="Aakkosjärjestys"><svg viewBox="0 0 24 24"><path d="M6 4v16m0 0-4-4m4 4 4-4"/><path d="M15 9V6.5a2.5 2.5 0 0 1 5 0V9m-5-2h5M15 20l2.5-5 2.5 5m-4-1.5h3" style="stroke-width:1.6"/></svg></button><button class="ic" id="tgl" title="Piilota kaikki" aria-label="Piilota kaikki"><svg viewBox="0 0 24 24"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg></button><button class="btn" id="tst">Testi</button></div>
  <div class="wrap"><div class="grid">
   <div class="head">
    <div><span id="n0">English</span> <button class="ic" id="hEn" title="Piilota / näytä englanti" aria-label="Piilota tai näytä englanti"><svg viewBox="0 0 24 24"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/><path d="M3 21 21 3"/></svg></button></div>
@@ -97,6 +106,11 @@ textarea{width:100%;min-height:100px;margin-top:8px}
   </div>
   <div id="rows"></div>
  </div></div>
+</section>
+
+<section id="test" hidden>
+ <div class="top"><button class="btn" id="tback">← Takaisin</button><strong id="ttl2"></strong></div>
+ <div id="tbody"></div>
 </section>
 </main>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -149,7 +163,7 @@ function nat(a,b){var x=String(a).split("."),y=String(b).split(".");
   if(!isNaN(n)&&!isNaN(m)){if(n!==m)return n-m}else{var c=p.localeCompare(r);if(c)return c}}return 0}
 var armed=null;
 function home(){
- $("prac").hidden=true;$("home").hidden=false;cur=null;
+ $("prac").hidden=true;$("test").hidden=true;$("home").hidden=false;cur=null;
  updateBar();var g=$("groups");g.innerHTML="";
  var ids=Object.keys(docs).filter(function(i){return !docs[i].mix});
  if(!ids.length){var p=document.createElement("p");p.className="note";p.textContent="Ei vielä listoja. Lataa ensimmäinen CSV-tiedosto yllä.";g.appendChild(p);return}
@@ -201,7 +215,7 @@ function openMix(mode,idsIn,label){
   var mp=function(a){return(a||[]).map(function(i){return pos[d.keys[i]]}).filter(function(x){return x!==undefined})};
   var ord=d.order&&d.order.length===d.keys.length?mp(d.order):[],inO={};
   ord.forEach(function(i){inO[i]=1});keys.forEach(function(_,i){if(!inO[i])ord.push(i)});
-  d=Object.assign({},d,{ids:ids,cnt:en.length,order:ord,hEn:mp(d.hEn),hFi:mp(d.hFi)})}
+  d=Object.assign({},d,{ids:ids,cnt:en.length,order:ord,hEn:mp(d.hEn),hFi:mp(d.hFi),test:null})}
  else if(!d.keys&&d.cnt!==en.length)d=fresh;
  d.keys=keys;d.en=en;d.fi=fi;d.n=docs[ids[0]].n;
  d.name=label||"Yhdistetty: "+ids.map(function(i){return codeOf(docs[i])||docs[i].name}).join(", ");
@@ -267,7 +281,7 @@ function openList(id){
  rows=ord.map(function(i){return{i:i,h:[!!hE[i],!!hF[i]]}});colHid=[!!d.cEn,!!d.cFi];
  $("n0").textContent=d.n[0];$("n1").textContent=d.n[1];
  $("ttl").textContent=d.mix?d.name:(codeOf(d)||"")+"  "+(d.name||"");
- $("home").hidden=true;$("prac").hidden=false;window.scrollTo(0,0);render()}
+ $("home").hidden=true;$("test").hidden=true;$("prac").hidden=false;window.scrollTo(0,0);render()}
 function changed(){clearTimeout(tm);tm=setTimeout(flush,500)}
 function flush(){if(!tm||!cur)return;clearTimeout(tm);tm=null;var d=docs[cur];
  d.order=rows.map(function(r){return r.i});
@@ -293,5 +307,72 @@ $("shuf").onclick=function(){for(var i=rows.length-1;i>0;i--){var j=Math.floor(M
 $("abc").onclick=function(){var d=docs[cur];rows.sort(function(a,b){return d.en[a.i].localeCompare(d.en[b.i],"en")});render();changed()};
 $("back").onclick=function(){flush();home()};
 $("goShuf").onclick=function(){openMix("shuf")};$("goAbc").onclick=function(){openMix("abc")};$("clrSel").onclick=function(){sel={};home()};
+/* ---------- testi ---------- */
+var tSetup=false,tcfg={dir:0,mode:0},tTm=null;
+function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=txt;return e}
+function tnorm(x){return String(x).toLowerCase().replace(/\s+/g," ").replace(/[.!?]+$/,"").trim()}
+function tok(g,exp){g=tnorm(g);if(!g)return false;if(g===tnorm(exp))return true;return exp.split(/[\/;]/).some(function(p){return tnorm(p)===g})}
+function shuf(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
+function rng(n){var a=[];for(var i=0;i<n;i++)a.push(i);return a}
+function tQ(d,t,p){var i=t.order[p];return t.dir?d.fi[i]:d.en[i]}
+function tA(d,t,p){var i=t.order[p];return t.dir?d.en[i]:d.fi[i]}
+function tSave(now){clearTimeout(tTm);tTm=null;if(now){if(cur)persist(cur)}else tTm=setTimeout(function(){tTm=null;if(cur)persist(cur)},600)}
+function tFlush(){if(tTm){clearTimeout(tTm);tTm=null;if(cur)persist(cur)}}
+document.addEventListener("visibilitychange",function(){if(document.hidden)tFlush()});
+function inputFor(v){var i=el("input","tin");i.type="text";i.value=v||"";["autocomplete:off","autocapitalize:off","autocorrect:off","spellcheck:false"].forEach(function(a){var k=a.split(":");i.setAttribute(k[0],k[1])});i.setAttribute("aria-label","Vastaus");return i}
+function startTest(order){var d=docs[cur],a=[],r=[];order.forEach(function(){a.push("");r.push(-1)});
+ d.test={dir:tcfg.dir,mode:tcfg.mode,order:order,pos:0,ans:a,res:r,done:false,ts:Date.now()};tSetup=false;tSave(true);renderTest()}
+function openTest(){var d=docs[cur];
+ if(d.test&&(!d.test.order||d.test.order.some(function(i){return i>=d.en.length})))d.test=null;
+ tSetup=!d.test;$("prac").hidden=true;$("home").hidden=true;$("test").hidden=false;window.scrollTo(0,0);renderTest()}
+function renderTest(){var d=docs[cur],b=$("tbody"),t=d.test;b.innerHTML="";$("ttl2").textContent=$("ttl").textContent;
+ if(tSetup||!t)setupView(b,d);else if(t.done)resultView(b,d);else if(t.mode===0)oneView(b,d);else allView(b,d)}
+function setupView(b,d){var t=d.test;
+ if(t&&!t.done){var c=el("div","tq");c.appendChild(el("p","tl","Keskeneräinen testi: "+t.pos+" / "+t.order.length+" tehty."));
+  var j=el("button","btn","Jatka");j.onclick=function(){tSetup=false;renderTest()};c.appendChild(j);b.appendChild(c)}
+ var box=el("div","tq");box.appendChild(el("p","tl","Suunta"));var s1=el("div","seg");
+ [d.n[0]+" → "+d.n[1],d.n[1]+" → "+d.n[0]].forEach(function(l,k){var x=el("button","btn",l);x.setAttribute("aria-pressed",tcfg.dir===k?"true":"false");x.onclick=function(){tcfg.dir=k;renderTest()};s1.appendChild(x)});
+ box.appendChild(s1);box.appendChild(el("p","tl","Tapa"));var s2=el("div","seg");
+ ["Yksi kerrallaan (Enter näyttää oikean vastauksen)","Kaikki kerralla (tarkistus lopuksi)"].forEach(function(l,k){var x=el("button","btn",l);x.setAttribute("aria-pressed",tcfg.mode===k?"true":"false");x.onclick=function(){tcfg.mode=k;renderTest()};s2.appendChild(x)});
+ box.appendChild(s2);var go=el("button","btn","Aloita testi");go.onclick=function(){startTest(shuf(rng(d.en.length)))};box.appendChild(go);b.appendChild(box)}
+function topRow(b,txt,t){var h=el("div","r");h.style.marginBottom="10px";h.appendChild(el("span","tl",txt));
+ var nb=el("button","btn sm","Aloita alusta"),ask=el("span","r");ask.hidden=true;
+ ask.appendChild(el("span","tl","Aloitetaanko alusta? Vastaukset nollautuvat."));
+ var y=el("button","btn sm","Kyllä, aloita alusta"),n=el("button","btn sm","Peruuta");
+ nb.onclick=function(){nb.hidden=true;ask.hidden=false;n.focus()};
+ n.onclick=function(){ask.hidden=true;nb.hidden=false};
+ y.onclick=function(){tcfg.dir=t.dir;tcfg.mode=t.mode;startTest(shuf(t.order))};
+ ask.appendChild(y);ask.appendChild(n);h.appendChild(nb);h.appendChild(ask);b.appendChild(h)}
+function oneView(b,d){var t=d.test,n=t.order.length,p=t.pos,ok=t.res.filter(function(r){return r===1}).length;
+ topRow(b,(p+1)+" / "+n+" · oikein "+ok,t);
+ var c=el("div","tq"),checked=t.res[p]!==-1;c.appendChild(el("div","tl",d.n[t.dir]));c.appendChild(el("div","big",tQ(d,t,p)));
+ var inp=inputFor(t.ans[p]);inp.readOnly=checked;c.appendChild(inp);
+ var fb=el("div","fb");if(checked){var g=t.res[p]===1;fb.textContent=g?"Oikein":"Väärin. Oikea vastaus: "+tA(d,t,p);fb.className="fb "+(g?"t-ok":"t-bad")}c.appendChild(fb);
+ var go=el("button","btn",checked?(p+1>=n?"Valmis":"Seuraava"):"Tarkista");
+ function act(){if(!checked){t.ans[p]=inp.value;t.res[p]=tok(inp.value,tA(d,t,p))?1:0}else if(p+1>=n)t.done=true;else t.pos=p+1;tSave(true);renderTest()}
+ go.onclick=act;inp.onkeydown=function(e){if(e.key==="Enter"){e.preventDefault();act()}};
+ c.appendChild(go);b.appendChild(c);inp.focus()}
+function allView(b,d){var t=d.test,n=t.order.length,ins=[];
+ var cnt=null;function upd(){cnt.textContent="Vastattu "+t.ans.filter(function(x){return String(x).trim()}).length+" / "+n}
+ topRow(b,"",t);cnt=b.firstChild.firstChild;upd();
+ function finish(){for(var p=0;p<n;p++)t.res[p]=tok(t.ans[p]||"",tA(d,t,p))?1:0;t.done=true;tSave(true);window.scrollTo(0,0);renderTest()}
+ for(var p=0;p<n;p++){(function(p){var r=el("div","tq");r.appendChild(el("div","tw",tQ(d,t,p)));var i=inputFor(t.ans[p]);
+  i.oninput=function(){t.ans[p]=i.value;upd();tSave(false)};
+  i.onkeydown=function(e){if(e.key==="Enter"){e.preventDefault();if(ins[p+1])ins[p+1].focus();else finish()}};
+  ins.push(i);r.appendChild(i);b.appendChild(r)})(p)}
+ var go=el("button","btn","Tarkista");go.onclick=finish;b.appendChild(go);
+ var fe=ins.filter(function(i){return !i.value})[0]||ins[0];if(fe)fe.focus()}
+function resultView(b,d){var t=d.test,n=t.order.length,ok=t.res.filter(function(r){return r===1}).length;
+ var c=el("div","tq");c.appendChild(el("div","big",ok+" / "+n+" oikein ("+Math.round(ok/n*100)+" %)"));
+ var bs=el("div","r"),wrong=[];t.res.forEach(function(r,p){if(r!==1)wrong.push(t.order[p])});
+ var nw=el("button","btn","Uusi testi");nw.onclick=function(){tSetup=true;renderTest()};bs.appendChild(nw);
+ if(wrong.length){var wb=el("button","btn","Testaa väärät uudelleen");wb.onclick=function(){tcfg.dir=t.dir;tcfg.mode=t.mode;startTest(shuf(wrong))};bs.appendChild(wb)}
+ c.appendChild(bs);b.appendChild(c);
+ rng(n).sort(function(a,z){return (t.res[a]===1)-(t.res[z]===1)||a-z}).forEach(function(p){
+  var good=t.res[p]===1,r=el("div","tq");r.appendChild(el("div","tw",(good?"✓ ":"✗ ")+tQ(d,t,p)));
+  var l=el("div",good?"t-ok":"t-bad",good?(t.ans[p]||""):("Vastasit: "+(t.ans[p]||"–")+" · Oikea: "+tA(d,t,p)));r.appendChild(l);b.appendChild(r)})}
+$("tst").onclick=function(){flush();openTest()};
+$("tback").onclick=function(){tFlush();$("test").hidden=true;$("prac").hidden=false;render()};
+
 init();
 </script></body></html>
