@@ -48,7 +48,8 @@ textarea{width:100%;min-height:100px;margin-top:8px}
 #sync,#msg{font-size:14px;opacity:.75}
 .note{font-size:14px;opacity:.7;margin:10px 4px 0}
 .bar{position:sticky;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);margin-top:14px;padding:10px 14px;background:var(--head);border-radius:10px;display:flex;flex-direction:column;gap:8px;z-index:3;box-shadow:0 0 0 2px var(--bg)}
-.bar .btn{background:var(--row)}
+.bar .btn,.bar .ic,.tb .ic{background:var(--row)}
+.r .ic{background:var(--row)}
 .bar span{font-weight:700;margin-right:auto}
 .chk{width:22px;height:22px;accent-color:#0a7d78;margin:0 0 0 14px}
 .h2r{display:flex;align-items:center;gap:12px}
@@ -61,8 +62,8 @@ textarea{width:100%;min-height:100px;margin-top:8px}
  <div class="r" style="margin:-6px 4px 12px"><button class="btn sm" id="cp" hidden>Kopioi oma linkki</button></div>
  <div class="load">
   <div class="r">
-   <button class="btn" id="pick">Lataa sanalista (CSV)</button>
-   <input type="file" id="file" accept=".csv,.tsv,.txt,text/csv,text/plain" class="sr" tabindex="-1">
+   <button class="btn" id="pick">Lataa sanalistoja (CSV)</button><button class="btn" id="allBtn" hidden>Kaikki sanat</button>
+   <input type="file" id="file" multiple accept=".csv,.tsv,.txt,text/csv,text/plain" class="sr" tabindex="-1">
    <span id="msg" role="status"></span><span id="sync"></span>
   </div>
   <details id="pd"><summary>Tai liitä sanat tähän</summary>
@@ -72,8 +73,8 @@ textarea{width:100%;min-height:100px;margin-top:8px}
   <div class="form" id="form" hidden>
    <div class="r">
     <label>Kurssi <input id="fc" placeholder="esim. 7" aria-label="Kurssi"></label>
-    <label>Kappale <input id="fk" placeholder="esim. 2.1" aria-label="Kappale"></label>
    </div>
+   <div id="fl"></div>
    <div class="r" style="margin-top:10px">
     <button class="btn" id="save">Tallenna</button>
     <button class="btn" id="cancel">Peruuta</button>
@@ -81,12 +82,12 @@ textarea{width:100%;min-height:100px;margin-top:8px}
   </div>
  </div>
  <div id="groups"></div>
- <div class="bar" id="bar" hidden><span id="selinfo"></span><div class="r"><button class="btn" id="goShuf">Sekoita</button><button class="btn" id="goAbc">Aakkosjärjestys</button><button class="btn" id="clrSel">Tyhjennä valinta</button></div></div>
+ <div class="bar" id="bar" hidden><span id="selinfo"></span><div class="r"><button class="ic" id="goShuf" title="Sekoita" aria-label="Sekoita"><svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button><button class="ic" id="goAbc" title="Aakkosjärjestys" aria-label="Aakkosjärjestys"><svg viewBox="0 0 24 24"><path d="M6 4v16m0 0-4-4m4 4 4-4"/><path d="M15 9V6.5a2.5 2.5 0 0 1 5 0V9m-5-2h5M15 20l2.5-5 2.5 5m-4-1.5h3" style="stroke-width:1.6"/></svg></button><button class="btn" id="clrSel">Tyhjennä valinta</button></div></div>
 </section>
 
 <section id="prac" hidden>
  <div class="top"><button class="btn" id="back">← Etusivu</button><strong id="ttl"></strong><span id="sync2"></span></div>
- <div class="r" style="margin:0 0 12px"><button class="btn" id="shuf">Sekoita</button><button class="btn" id="abc">Aakkosjärjestys</button><button class="btn" id="ord">Kurssin järjestys</button><button class="btn" id="hideAll">Piilota kaikki</button><button class="btn" id="showAll">Näytä kaikki</button></div>
+ <div class="r" style="margin:0 0 12px"><button class="ic" id="shuf" title="Sekoita" aria-label="Sekoita"><svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button><button class="ic" id="abc" title="Aakkosjärjestys" aria-label="Aakkosjärjestys"><svg viewBox="0 0 24 24"><path d="M6 4v16m0 0-4-4m4 4 4-4"/><path d="M15 9V6.5a2.5 2.5 0 0 1 5 0V9m-5-2h5M15 20l2.5-5 2.5 5m-4-1.5h3" style="stroke-width:1.6"/></svg></button><button class="ic" id="tgl" title="Piilota kaikki" aria-label="Piilota kaikki"><svg viewBox="0 0 24 24"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg></button></div>
  <div class="wrap"><div class="grid">
   <div class="head">
    <div><span id="n0">English</span> <button class="ic" id="hEn" title="Piilota / näytä englanti" aria-label="Piilota tai näytä englanti"><svg viewBox="0 0 24 24"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/><path d="M3 21 21 3"/></svg></button></div>
@@ -150,13 +151,14 @@ var armed=null;
 function home(){
  $("prac").hidden=true;$("home").hidden=false;cur=null;
  updateBar();var g=$("groups");g.innerHTML="";
- var ids=Object.keys(docs).filter(function(i){return !docs[i].mix});
+ var ids=Object.keys(docs).filter(function(i){return !docs[i].mix});$("allBtn").hidden=!ids.length;
  if(!ids.length){var p=document.createElement("p");p.className="note";p.textContent="Ei vielä listoja. Lataa ensimmäinen CSV-tiedosto yllä.";g.appendChild(p);return}
  var by={};ids.forEach(function(id){var c=docs[id].course||"";(by[c]=by[c]||[]).push(id)});
  Object.keys(by).sort(function(a,b){if(!a)return 1;if(!b)return -1;return nat(a,b)}).forEach(function(c){
   var h=document.createElement("h2");h.className="h2r";var ht=document.createElement("span");ht.textContent=c?"Kurssi "+c:"Ilman kurssia";h.appendChild(ht);
   var sb=document.createElement("button");sb.className="btn sm";var all=by[c].every(function(i){return sel[i]});sb.textContent=all?"Poista valinta":"Valitse kaikki";
-  sb.onclick=function(){by[c].forEach(function(i){if(all)delete sel[i];else sel[i]=1});home()};h.appendChild(sb);g.appendChild(h);
+  sb.onclick=function(){by[c].forEach(function(i){if(all)delete sel[i];else sel[i]=1});home()};h.appendChild(sb);
+  var ob=document.createElement("button");ob.className="btn sm";ob.textContent="Avaa kaikki";ob.onclick=function(){openMix("",by[c],c?"Kurssi "+c:"Ilman kurssia")};h.appendChild(ob);g.appendChild(h);
   by[c].sort(function(a,b){return nat(docs[a].chapter||"",docs[b].chapter||"")}).forEach(function(id){
    var d=docs[id],it=document.createElement("div");it.className="item";
    var k=document.createElement("input");k.type="checkbox";k.className="chk";k.checked=!!sel[id];k.setAttribute("aria-label","Valitse "+(codeOf(d)||d.name));
@@ -179,14 +181,15 @@ var sel={};
 function selIds(){return Object.keys(sel).filter(function(i){return docs[i]&&!docs[i].mix}).sort(function(a,b){var x=docs[a],y=docs[b];return (!x.course)-(!y.course)||nat(x.course||"",y.course||"")||nat(x.chapter||"",y.chapter||"")})}
 function updateBar(){var ids=selIds(),n=0;ids.forEach(function(i){n+=docs[i].en.length});$("bar").hidden=!ids.length;$("selinfo").textContent=ids.length+" listaa, "+n+" sanaa"}
 function hash(s){var h=5381;for(var i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;return (h>>>0).toString(36)}
-function openMix(mode){
- var ids=selIds();if(!ids.length)return;
+function sortIds(a){return a.filter(function(i){return docs[i]&&!docs[i].mix}).sort(function(a,b){var x=docs[a],y=docs[b];return (!x.course)-(!y.course)||nat(x.course||"",y.course||"")||nat(x.chapter||"",y.chapter||"")})}
+function openMix(mode,idsIn,label){
+ var ids=idsIn?sortIds(idsIn):selIds();if(!ids.length)return;
  var id="m"+hash(ids.join(",")),en=[],fi=[];
  ids.forEach(function(i){en=en.concat(docs[i].en);fi=fi.concat(docs[i].fi)});
  var d=docs[id];
  if(!d||d.cnt!==en.length)d={mix:true,ids:ids,cnt:en.length,order:null,hEn:[],hFi:[],cEn:false,cFi:false,ts:Date.now()};
  d.en=en;d.fi=fi;d.n=docs[ids[0]].n;
- d.name=ids.map(function(i){return codeOf(docs[i])||docs[i].name}).join(", ");
+ d.name=label||"Yhdistetty: "+ids.map(function(i){return codeOf(docs[i])||docs[i].name}).join(", ");
  docs[id]=d;openList(id);
  if(mode==="shuf")$("shuf").click();else if(mode==="abc")$("abc").click()}
 
@@ -206,30 +209,38 @@ function parse(text){
  return out.map(function(r){return r.map(function(x){return x.trim()})}).filter(function(r){return r.length>=2&&r[0]&&r[1]})}
 var pending=null,editId=null;
 function msg(t){$("msg").textContent=t}
-function stage(text,name){
- var p=parse(text),names=["English","Finnish"];
- if(p.length&&/^(english|englanti|finnish|suomi|word|sana|term|kieli|lang)/i.test(p[0][0])){names=[p[0][0],p[0][1]];p.shift()}
- if(!p.length){msg("Sanoja ei löytynyt. Tarkista, että rivillä on kaksi sanaa erotettuna puolipisteellä, tabilla tai pilkulla.");return}
- pending={en:p.map(function(r){return r[0]}),fi:p.map(function(r){return r[1]}),n:names};
- editId=null;$("fc").value="";$("fk").value="";
- msg("");showForm()}
-function showForm(){$("form").hidden=false;$("save").textContent=editId?"Tallenna muutokset":"Tallenna";prev();$("fc").focus()}
-function editForm(id){var d=docs[id];pending=null;editId=id;$("fc").value=d.course||"";$("fk").value=d.chapter||"";msg("");showForm();window.scrollTo(0,0)}
 function clean(v){return v.replace(/\s+/g,"").replace(/[^0-9A-Za-zÅÄÖåäö.\-_]/g,"").replace(/^\.+|\.+$/g,"")}
-function prev(){}
-["fc","fk"].forEach(function(i){$(i).oninput=prev});
-$("pick").onclick=function(){$("file").click()};
-$("file").onchange=function(e){var f=e.target.files[0];if(!f)return;var rd=new FileReader();
+function stageMany(items){
+ var list=[];
+ items.forEach(function(it){var p=parse(it.text),names=["English","Finnish"];
+  if(p.length&&/^(english|englanti|finnish|suomi|word|sana|term|kieli|lang)/i.test(p[0][0])){names=[p[0][0],p[0][1]];p.shift()}
+  if(p.length)list.push({name:it.name,en:p.map(function(r){return r[0]}),fi:p.map(function(r){return r[1]}),n:names})});
+ if(!list.length){msg("Sanoja ei löytynyt. Tarkista, että rivillä on kaksi sanaa erotettuna puolipisteellä, tabilla tai pilkulla.");return}
+ pending=list;editId=null;$("fc").value="";msg("");buildChapters();showForm()}
+function addRow(box,label,val){var r=document.createElement("div");r.className="r";r.style.marginTop="8px";
+ var l=document.createElement("label");l.textContent=(label?label+": ":"")+"Kappale ";
+ var i=document.createElement("input");i.placeholder="esim. 2.1";i.value=val;i.setAttribute("aria-label","Kappale");l.appendChild(i);r.appendChild(l);box.appendChild(r)}
+function buildChapters(){var box=$("fl");box.innerHTML="";
+ if(editId)addRow(box,"",docs[editId].chapter||"");
+ else pending.forEach(function(f){addRow(box,pending.length>1?f.name+" ("+f.en.length+")":"","")})}
+function showForm(){$("form").hidden=false;$("save").textContent=editId?"Tallenna muutokset":"Tallenna";$("fc").focus()}
+function editForm(id){var d=docs[id];pending=null;editId=id;$("fc").value=d.course||"";msg("");buildChapters();showForm();window.scrollTo(0,0)}
+function readFile(f){return new Promise(function(res){var rd=new FileReader();
  rd.onload=function(){var txt;try{txt=new TextDecoder("utf-8",{fatal:true}).decode(rd.result)}catch(err){txt=new TextDecoder("windows-1252").decode(rd.result)}
-  stage(txt,f.name.replace(/\.[^.]+$/,""))};rd.readAsArrayBuffer(f);e.target.value=""};
-$("usePaste").onclick=function(){stage($("paste").value,"")};
+  res({name:f.name.replace(/\.[^.]+$/,""),text:txt})};rd.readAsArrayBuffer(f)})}
+$("pick").onclick=function(){$("file").click()};
+$("file").onchange=function(e){var fs=Array.prototype.slice.call(e.target.files);e.target.value="";if(!fs.length)return;
+ fs.sort(function(a,b){return a.name.localeCompare(b.name,"fi",{numeric:true})});
+ Promise.all(fs.map(readFile)).then(stageMany)};
+$("usePaste").onclick=function(){stageMany([{name:"Liitetty lista",text:$("paste").value}])};
 $("cancel").onclick=function(){$("form").hidden=true;pending=null;editId=null;msg("")};
 $("save").onclick=function(){
- var c=clean($("fc").value),k=clean($("fk").value);
+ var c=clean($("fc").value);
  if(!c){msg("Kurssi puuttuu.");$("fc").focus();return}
- if(editId){var d=docs[editId];d.course=c;d.chapter=k;persist(editId)}
- else if(pending){var id="l"+Date.now().toString(36);
-  docs[id]={course:c,chapter:k,name:"",en:pending.en,fi:pending.fi,n:pending.n,order:null,hEn:[],hFi:[],cEn:false,cFi:false,ts:Date.now()};persist(id)}
+ var ins=$("fl").querySelectorAll("input");
+ if(editId){var d=docs[editId];d.course=c;d.chapter=clean(ins[0].value);persist(editId)}
+ else if(pending){pending.forEach(function(f,i){var id="l"+Date.now().toString(36)+i;
+  docs[id]={course:c,chapter:clean(ins[i].value),name:"",en:f.en,fi:f.fi,n:f.n,order:null,hEn:[],hFi:[],cEn:false,cFi:false,ts:Date.now()};persist(id)})}
  $("form").hidden=true;pending=null;editId=null;$("paste").value="";msg("");home()};
 
 /* ---------- harjoittelu ---------- */
@@ -240,7 +251,7 @@ function openList(id){
  var hE={},hF={};(d.hEn||[]).forEach(function(i){hE[i]=1});(d.hFi||[]).forEach(function(i){hF[i]=1});
  rows=ord.map(function(i){return{i:i,h:[!!hE[i],!!hF[i]]}});colHid=[!!d.cEn,!!d.cFi];
  $("n0").textContent=d.n[0];$("n1").textContent=d.n[1];
- $("ttl").textContent=d.mix?"Yhdistetty: "+d.name:(codeOf(d)||"")+"  "+(d.name||"");
+ $("ttl").textContent=d.mix?d.name:(codeOf(d)||"")+"  "+(d.name||"");
  $("home").hidden=true;$("prac").hidden=false;window.scrollTo(0,0);render()}
 function changed(){clearTimeout(tm);tm=setTimeout(flush,500)}
 function flush(){if(!tm||!cur)return;clearTimeout(tm);tm=null;var d=docs[cur];
@@ -255,16 +266,18 @@ function render(){var d=docs[cur],box=$("rows");box.innerHTML="";
    var s=document.createElement("span");s.textContent=(c?d.fi:d.en)[r.i];b.appendChild(s);
    b.setAttribute("aria-pressed",r.h[c]?"true":"false");b.dataset.k=r.i+"-"+c;
    b.onclick=function(){r.h[c]=!r.h[c];render();var f=box.querySelector('[data-k="'+r.i+"-"+c+'"]');if(f)f.focus();changed()};
-   el.appendChild(b)});box.appendChild(el)})}
+   el.appendChild(b)});box.appendChild(el)});updTgl()}
+var EYE='<svg viewBox="0 0 24 24"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>',EYEX='<svg viewBox="0 0 24 24"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/><path d="M3 21 21 3"/></svg>';
+function allHid(){return rows.length>0&&rows.every(function(r){return r.h[0]&&r.h[1]})}
+function updTgl(){var t=$("tgl"),h=allHid();t.innerHTML=h?EYEX:EYE;t.title=h?"Näytä kaikki":"Piilota kaikki";t.setAttribute("aria-label",t.title)}
+$("tgl").onclick=function(){var v=!allHid();colHid=[v,v];rows.forEach(function(r){r.h=[v,v]});render();changed()};
+$("allBtn").onclick=function(){openMix("",Object.keys(docs),"Kaikki sanat")};
 function setCol(c,v){colHid[c]=v;rows.forEach(function(r){r.h[c]=v});render();changed()}
 $("hEn").onclick=function(){setCol(0,!colHid[0])};
 $("hFi").onclick=function(){setCol(1,!colHid[1])};
-$("hideAll").onclick=function(){colHid=[true,true];rows.forEach(function(r){r.h=[true,true]});render();changed()};
-$("showAll").onclick=function(){colHid=[false,false];rows.forEach(function(r){r.h=[false,false]});render();changed()};
 $("shuf").onclick=function(){for(var i=rows.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=rows[i];rows[i]=rows[j];rows[j]=t}render();changed()};
 $("abc").onclick=function(){var d=docs[cur];rows.sort(function(a,b){return d.en[a.i].localeCompare(d.en[b.i],"en")});render();changed()};
 $("back").onclick=function(){flush();home()};
 $("goShuf").onclick=function(){openMix("shuf")};$("goAbc").onclick=function(){openMix("abc")};$("clrSel").onclick=function(){sel={};home()};
-$("ord").onclick=function(){rows.sort(function(a,b){return a.i-b.i});render();changed()};
 init();
 </script></body></html>
