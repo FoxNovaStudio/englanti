@@ -321,7 +321,7 @@ function dialog(txt,btns){var d=$("dlg"),bx=$("dbtn");$("dtxt").textContent=txt;
 function confirmBox(txt,yes,fn){dialog(txt,[{label:yes,fn:fn}])}
 
 /* ---------- testi ---------- */
-var tSetup=false,tcfg={dir:0,mode:0},tTm=null;
+var tSetup=false,tPool=null,tRestart=false,tcfg={dir:0,mode:0},tTm=null;
 function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=txt;return e}
 function tnorm(x){return String(x).toLowerCase().replace(/\s+/g," ").replace(/[.!?]+$/,"").trim()}
 function tok(g,exp){g=tnorm(g);if(!g)return false;if(g===tnorm(exp))return true;return exp.split(/[\/;]/).some(function(p){return tnorm(p)===g})}
@@ -336,27 +336,32 @@ document.addEventListener("visibilitychange",function(){if(document.hidden)tFlus
 function inputFor(v){var i=el("input","tin");i.type="text";i.value=v||"";["autocomplete:off","autocapitalize:off","autocorrect:off","spellcheck:false"].forEach(function(a){var k=a.split(":");i.setAttribute(k[0],k[1])});i.setAttribute("aria-label","Vastaus");return i}
 function startTest(order){var d=docs[cur],a=[],r=[];order.forEach(function(){a.push("");r.push(-1)});
  var dirs=order.map(function(){return Math.random()<.5?0:1});
- d.test={dir:tcfg.dir,dirs:dirs,mode:tcfg.mode,order:order,pos:0,ans:a,res:r,done:false,ts:Date.now()};tSetup=false;tSave(true);renderTest()}
+ d.test={dir:tcfg.dir,dirs:dirs,mode:tcfg.mode,order:order,pos:0,ans:a,res:r,done:false,ts:Date.now()};tSetup=false;tRestart=false;tSave(true);renderTest()}
 function openTest(){var d=docs[cur];
  if(d.test&&(!d.test.order||d.test.order.some(function(i){return i>=d.en.length})))d.test=null;
- tSetup=!d.test;$("prac").hidden=true;$("home").hidden=true;$("test").hidden=false;window.scrollTo(0,0);renderTest()}
+ tPool=null;tRestart=false;tSetup=!d.test;$("prac").hidden=true;$("home").hidden=true;$("test").hidden=false;window.scrollTo(0,0);renderTest()}
 function renderTest(){var d=docs[cur],b=$("tbody"),t=d.test;b.innerHTML="";$("ttl2").textContent=$("ttl").textContent;
  if(tSetup||!t)setupView(b,d);else if(t.done)resultView(b,d);else if(t.mode===0)oneView(b,d);else allView(b,d)}
 function setupView(b,d){var t=d.test;
- if(t&&!t.done){var c=el("div","tq");c.appendChild(el("p","tl","Keskeneräinen testi: "+t.pos+" / "+t.order.length+" tehty."));
+ if(t&&!t.done&&!tRestart){var c=el("div","tq");c.appendChild(el("p","tl","Keskeneräinen testi: "+t.pos+" / "+t.order.length+" tehty."));
   var j=el("button","btn","Jatka");j.onclick=function(){tSetup=false;renderTest()};c.appendChild(j);b.appendChild(c)}
  var box=el("div","tq");box.appendChild(el("p","tl","Suunta"));var s1=el("div","seg");
  [d.n[0]+" → "+d.n[1],d.n[1]+" → "+d.n[0],"Sekaisin"].forEach(function(l,k){var x=el("button","btn",l);x.setAttribute("aria-pressed",tcfg.dir===k?"true":"false");x.onclick=function(){tcfg.dir=k;renderTest()};s1.appendChild(x)});
  box.appendChild(s1);box.appendChild(el("p","tl","Tapa"));var s2=el("div","seg");
  ["Yksi kerrallaan (Enter näyttää oikean vastauksen)","Kaikki kerralla (tarkistus lopuksi)"].forEach(function(l,k){var x=el("button","btn",l);x.setAttribute("aria-pressed",tcfg.mode===k?"true":"false");x.onclick=function(){tcfg.mode=k;renderTest()};s2.appendChild(x)});
- box.appendChild(s2);var go=el("button","btn","Aloita testi");go.onclick=function(){var go2=function(){startTest(shuf(rng(d.en.length)))};if(t&&!t.done)confirmBox("Keskeneräinen testi korvataan uudella. Aloitetaanko?","Aloita uusi testi",go2);else go2()};box.appendChild(go);b.appendChild(box)}
-function wrongFlow(d,t){var wrong=[];t.res.forEach(function(r,p){if(r===0)wrong.push(t.order[p])});if(!wrong.length)return;
- var o=[[d.n[0]+" → "+d.n[1],0],[d.n[1]+" → "+d.n[0],1],["Sekaisin",2]];
- dialog("Aloitetaanko uusi testi vain väärin menneillä sanoilla ("+wrong.length+")? Nykyinen testi korvataan. Valitse kieli:",
-  o.map(function(x){return{label:x[0],fn:function(){tcfg.dir=x[1];tcfg.mode=t.mode;startTest(shuf(wrong))}}}))}
+ box.appendChild(s2);var go=el("button","btn","Aloita testi");go.onclick=function(){var go2=function(){startTest(shuf(tPool||rng(d.en.length)))};if(t&&!t.done&&!tRestart)confirmBox("Keskeneräinen testi korvataan uudella. Aloitetaanko?","Aloita uusi testi",go2);else go2()};box.appendChild(go);b.appendChild(box)}
+function wrongFlow(d,t){var all=[],ans=[];
+ t.res.forEach(function(r,p){if(r===0){all.push(t.order[p]);if(String(t.ans[p]||"").trim())ans.push(t.order[p])}});
+ if(!all.length)return;
+ function lang(list){var o=[[d.n[0]+" → "+d.n[1],0],[d.n[1]+" → "+d.n[0],1],["Sekaisin",2]];
+  dialog("Aloitetaanko uusi testi vain väärin menneillä sanoilla ("+list.length+")? Nykyinen testi korvataan. Valitse kieli:",
+   o.map(function(x){return{label:x[0],fn:function(){tcfg.dir=x[1];tcfg.mode=t.mode;startTest(shuf(list))}}}))}
+ if(ans.length>0&&ans.length<all.length)
+  dialog("Mitkä väärät sanat otetaan mukaan?",[{label:"Kaikki väärät ("+all.length+")",fn:function(){lang(all)}},{label:"Vain ne, joihin vastasin ("+ans.length+")",fn:function(){lang(ans)}}]);
+ else lang(all)}
 function topRow(b,txt,t,showWrong){var h=el("div","r");h.style.marginBottom="10px";h.appendChild(el("span","tl",txt));
  var nb=el("button","btn sm","Aloita alusta");
- nb.onclick=function(){confirmBox("Aloitetaanko alusta? Vastaukset nollautuvat.","Kyllä, aloita alusta",function(){tcfg.dir=t.dir;tcfg.mode=t.mode;startTest(shuf(t.order))})};
+ nb.onclick=function(){confirmBox("Aloitetaanko alusta? Vastaukset nollautuvat. Valitset kielen ja tavan uudelleen.","Kyllä, aloita alusta",function(){tcfg.dir=t.dir;tcfg.mode=t.mode;tPool=t.order.slice();tRestart=true;tSetup=true;renderTest()})};
  h.appendChild(nb);
  if(showWrong&&t.res.some(function(r){return r===0})){var wb=el("button","btn sm","Testaa väärät");wb.onclick=function(){wrongFlow(d0(),t)};h.appendChild(wb)}
  b.appendChild(h)}
@@ -365,11 +370,13 @@ function oneView(b,d){var t=d.test,n=t.order.length,p=t.pos,ok=t.res.filter(func
  topRow(b,(p+1)+" / "+n+" · oikein "+ok,t,true);
  var c=el("div","tq"),checked=t.res[p]!==-1;c.appendChild(el("div","tl",d.n[dirOf(t,p)]));c.appendChild(el("div","big",tQ(d,t,p)));
  var inp=inputFor(t.ans[p]);inp.readOnly=checked;c.appendChild(inp);
- var fb=el("div","fb");if(checked){var g=t.res[p]===1;fb.textContent=g?"Oikein":"Väärin. Oikea vastaus: "+tA(d,t,p);fb.className="fb "+(g?"t-ok":"t-bad")}c.appendChild(fb);
+ var fb=el("div","fb");if(checked){if(t.res[p]===1){fb.textContent="Oikein";fb.className="fb t-ok"}else{fb.appendChild(el("div","t-bad","Vastasit: "+(t.ans[p]||"–")));fb.appendChild(el("div","t-ok","Oikea: "+tA(d,t,p)))}}c.appendChild(fb);
  var go=el("button","btn",checked?(p+1>=n?"Valmis":"Seuraava"):"Tarkista");
  function act(){if(!checked){t.ans[p]=inp.value;t.res[p]=tok(inp.value,tA(d,t,p))?1:0}else if(p+1>=n)t.done=true;else t.pos=p+1;tSave(true);renderTest()}
  go.onclick=act;inp.onkeydown=function(e){if(e.key==="Enter"){e.preventDefault();act()}};
- c.appendChild(go);b.appendChild(c);inp.focus()}
+ c.appendChild(go);
+ if(checked&&t.res[p]===0){var fx=el("button","btn","Korjaa oikein");fx.style.marginLeft="10px";fx.onclick=function(){t.res[p]=1;tSave(true);renderTest()};c.appendChild(fx)}
+ b.appendChild(c);inp.focus()}
 function allView(b,d){var t=d.test,n=t.order.length,ins=[];
  var cnt=null;function upd(){cnt.textContent="Vastattu "+t.ans.filter(function(x){return String(x).trim()}).length+" / "+n}
  topRow(b,"",t);cnt=b.firstChild.firstChild;upd();
@@ -383,12 +390,15 @@ function allView(b,d){var t=d.test,n=t.order.length,ins=[];
 function resultView(b,d){var t=d.test,n=t.order.length,ok=t.res.filter(function(r){return r===1}).length;
  var c=el("div","tq");c.appendChild(el("div","big",ok+" / "+n+" oikein ("+Math.round(ok/n*100)+" %)"));
  var bs=el("div","r"),wrong=[];t.res.forEach(function(r,p){if(r===0)wrong.push(t.order[p])});
- var nw=el("button","btn","Uusi testi");nw.onclick=function(){tSetup=true;renderTest()};bs.appendChild(nw);
+ var nw=el("button","btn","Uusi testi");nw.onclick=function(){tPool=null;tRestart=false;tSetup=true;renderTest()};bs.appendChild(nw);
  if(wrong.length){var wb=el("button","btn","Testaa väärät uudelleen");wb.onclick=function(){wrongFlow(d,t)};bs.appendChild(wb)}
  c.appendChild(bs);b.appendChild(c);
  rng(n).sort(function(a,z){return (t.res[a]===1)-(t.res[z]===1)||a-z}).forEach(function(p){
   var good=t.res[p]===1,r=el("div","tq");r.appendChild(el("div","tw",(good?"✓ ":"✗ ")+tQ(d,t,p)));
-  var l=el("div",good?"t-ok":"t-bad",good?(t.ans[p]||""):("Vastasit: "+(t.ans[p]||"–")+" · Oikea: "+tA(d,t,p)));r.appendChild(l);b.appendChild(r)})}
+  if(good)r.appendChild(el("div","t-ok",t.ans[p]||""));
+  else{r.appendChild(el("div","t-bad","Vastasit: "+(t.ans[p]||"–")));r.appendChild(el("div","t-ok","Oikea: "+tA(d,t,p)));
+   var fx=el("button","btn sm","Korjaa oikein");fx.style.marginTop="8px";fx.onclick=function(){t.res[p]=1;tSave(true);renderTest()};r.appendChild(fx)}
+  b.appendChild(r)})}
 $("tst").onclick=function(){flush();openTest()};
 $("tback").onclick=function(){tFlush();$("test").hidden=true;$("prac").hidden=false;render()};
 
