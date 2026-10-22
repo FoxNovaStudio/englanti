@@ -62,6 +62,11 @@ textarea{width:100%;min-height:100px;margin-top:8px}
 .seg{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .btn[aria-pressed="true"]{box-shadow:inset 0 0 0 3px var(--focus)}
 .tw{font-weight:700;margin-bottom:6px}
+#dlg{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px}
+.dbox{background:var(--bg);color:var(--ink);border-radius:16px;padding:28px 26px;width:100%;max-width:440px;box-shadow:0 10px 40px rgba(0,0,0,.4);text-align:center}
+.dbox p{font-size:20px;font-weight:600;margin:0 0 22px;line-height:1.4}
+#dbtn{display:flex;flex-direction:column;gap:10px}
+.btn.lg{font-size:17px;padding:14px 20px;text-align:center}
 .sr{position:absolute;left:-9999px}
 @media (max-width:560px){.item{grid-template-columns:44px 70px 1fr}.item .a{grid-column:1/-1;justify-content:flex-start;padding-left:18px}}
 </style></head><body><main>
@@ -113,6 +118,7 @@ textarea{width:100%;min-height:100px;margin-top:8px}
  <div id="tbody"></div>
 </section>
 </main>
+<div id="dlg" hidden><div class="dbox"><p id="dtxt"></p><div id="dbtn"></div></div></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
@@ -161,7 +167,6 @@ function nat(a,b){var x=String(a).split("."),y=String(b).split(".");
  for(var i=0;i<Math.max(x.length,y.length);i++){var p=x[i],r=y[i];if(p===undefined)return -1;if(r===undefined)return 1;
   var n=parseInt(p,10),m=parseInt(r,10);
   if(!isNaN(n)&&!isNaN(m)){if(n!==m)return n-m}else{var c=p.localeCompare(r);if(c)return c}}return 0}
-var armed=null;
 function home(){
  $("prac").hidden=true;$("test").hidden=true;$("home").hidden=false;cur=null;
  updateBar();var g=$("groups");g.innerHTML="";
@@ -191,10 +196,9 @@ function home(){
    o.appendChild(cc);o.appendChild(nm);o.onclick=function(){openList(id)};it.appendChild(o);
    var a=document.createElement("div");a.className="a";
    var e=document.createElement("button");e.className="btn sm";e.textContent="Muokkaa tunnusta";e.onclick=function(){editForm(id)};
-   var x=document.createElement("button");x.className="btn sm";x.textContent=armed===id?"Varmista poisto":"Poista";
-   x.onclick=function(){if(armed===id){armed=null;remove(id);home()}else{armed=id;home()}};
+   var x=document.createElement("button");x.className="btn sm";x.textContent="Poista";
+   x.onclick=function(){confirmBox("Poistetaanko lista "+(codeOf(d)||"")+" ("+d.en.length+" sanaa)?","Poista",function(){remove(id);home()})};
    a.appendChild(e);a.appendChild(x);
-   if(armed===id){var cx=document.createElement("button");cx.className="btn sm";cx.textContent="Peruuta";cx.onclick=function(){armed=null;home()};a.appendChild(cx)}
    it.appendChild(a);g.appendChild(it)})})}
 
 /* ---------- valinta ja yhdistäminen ---------- */
@@ -307,6 +311,15 @@ $("shuf").onclick=function(){for(var i=rows.length-1;i>0;i--){var j=Math.floor(M
 $("abc").onclick=function(){var d=docs[cur];rows.sort(function(a,b){return d.en[a.i].localeCompare(d.en[b.i],"en")});render();changed()};
 $("back").onclick=function(){flush();home()};
 $("goShuf").onclick=function(){openMix("shuf")};$("goAbc").onclick=function(){openMix("abc")};$("clrSel").onclick=function(){sel={};home()};
+/* ---------- ponnahdusikkuna ---------- */
+function dialog(txt,btns){var d=$("dlg"),bx=$("dbtn");$("dtxt").textContent=txt;bx.innerHTML="";
+ function close(){d.hidden=true;document.removeEventListener("keydown",key)}
+ function key(e){if(e.key==="Escape")close()}
+ btns.forEach(function(b){var x=el("button","btn lg",b.label);x.onclick=function(){close();if(b.fn)b.fn()};bx.appendChild(x)});
+ var c=el("button","btn lg","Peruuta");c.onclick=close;bx.appendChild(c);
+ d.onclick=function(e){if(e.target===d)close()};document.addEventListener("keydown",key);d.hidden=false;c.focus()}
+function confirmBox(txt,yes,fn){dialog(txt,[{label:yes,fn:fn}])}
+
 /* ---------- testi ---------- */
 var tSetup=false,tcfg={dir:0,mode:0},tTm=null;
 function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=txt;return e}
@@ -314,14 +327,16 @@ function tnorm(x){return String(x).toLowerCase().replace(/\s+/g," ").replace(/[.
 function tok(g,exp){g=tnorm(g);if(!g)return false;if(g===tnorm(exp))return true;return exp.split(/[\/;]/).some(function(p){return tnorm(p)===g})}
 function shuf(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
 function rng(n){var a=[];for(var i=0;i<n;i++)a.push(i);return a}
-function tQ(d,t,p){var i=t.order[p];return t.dir?d.fi[i]:d.en[i]}
-function tA(d,t,p){var i=t.order[p];return t.dir?d.en[i]:d.fi[i]}
+function dirOf(t,p){return t.dir===2?(t.dirs&&t.dirs[p]?1:0):t.dir}
+function tQ(d,t,p){var i=t.order[p];return dirOf(t,p)?d.fi[i]:d.en[i]}
+function tA(d,t,p){var i=t.order[p];return dirOf(t,p)?d.en[i]:d.fi[i]}
 function tSave(now){clearTimeout(tTm);tTm=null;if(now){if(cur)persist(cur)}else tTm=setTimeout(function(){tTm=null;if(cur)persist(cur)},600)}
 function tFlush(){if(tTm){clearTimeout(tTm);tTm=null;if(cur)persist(cur)}}
 document.addEventListener("visibilitychange",function(){if(document.hidden)tFlush()});
 function inputFor(v){var i=el("input","tin");i.type="text";i.value=v||"";["autocomplete:off","autocapitalize:off","autocorrect:off","spellcheck:false"].forEach(function(a){var k=a.split(":");i.setAttribute(k[0],k[1])});i.setAttribute("aria-label","Vastaus");return i}
 function startTest(order){var d=docs[cur],a=[],r=[];order.forEach(function(){a.push("");r.push(-1)});
- d.test={dir:tcfg.dir,mode:tcfg.mode,order:order,pos:0,ans:a,res:r,done:false,ts:Date.now()};tSetup=false;tSave(true);renderTest()}
+ var dirs=order.map(function(){return Math.random()<.5?0:1});
+ d.test={dir:tcfg.dir,dirs:dirs,mode:tcfg.mode,order:order,pos:0,ans:a,res:r,done:false,ts:Date.now()};tSetup=false;tSave(true);renderTest()}
 function openTest(){var d=docs[cur];
  if(d.test&&(!d.test.order||d.test.order.some(function(i){return i>=d.en.length})))d.test=null;
  tSetup=!d.test;$("prac").hidden=true;$("home").hidden=true;$("test").hidden=false;window.scrollTo(0,0);renderTest()}
@@ -331,21 +346,24 @@ function setupView(b,d){var t=d.test;
  if(t&&!t.done){var c=el("div","tq");c.appendChild(el("p","tl","Keskeneräinen testi: "+t.pos+" / "+t.order.length+" tehty."));
   var j=el("button","btn","Jatka");j.onclick=function(){tSetup=false;renderTest()};c.appendChild(j);b.appendChild(c)}
  var box=el("div","tq");box.appendChild(el("p","tl","Suunta"));var s1=el("div","seg");
- [d.n[0]+" → "+d.n[1],d.n[1]+" → "+d.n[0]].forEach(function(l,k){var x=el("button","btn",l);x.setAttribute("aria-pressed",tcfg.dir===k?"true":"false");x.onclick=function(){tcfg.dir=k;renderTest()};s1.appendChild(x)});
+ [d.n[0]+" → "+d.n[1],d.n[1]+" → "+d.n[0],"Sekaisin"].forEach(function(l,k){var x=el("button","btn",l);x.setAttribute("aria-pressed",tcfg.dir===k?"true":"false");x.onclick=function(){tcfg.dir=k;renderTest()};s1.appendChild(x)});
  box.appendChild(s1);box.appendChild(el("p","tl","Tapa"));var s2=el("div","seg");
  ["Yksi kerrallaan (Enter näyttää oikean vastauksen)","Kaikki kerralla (tarkistus lopuksi)"].forEach(function(l,k){var x=el("button","btn",l);x.setAttribute("aria-pressed",tcfg.mode===k?"true":"false");x.onclick=function(){tcfg.mode=k;renderTest()};s2.appendChild(x)});
- box.appendChild(s2);var go=el("button","btn","Aloita testi");go.onclick=function(){startTest(shuf(rng(d.en.length)))};box.appendChild(go);b.appendChild(box)}
-function topRow(b,txt,t){var h=el("div","r");h.style.marginBottom="10px";h.appendChild(el("span","tl",txt));
- var nb=el("button","btn sm","Aloita alusta"),ask=el("span","r");ask.hidden=true;
- ask.appendChild(el("span","tl","Aloitetaanko alusta? Vastaukset nollautuvat."));
- var y=el("button","btn sm","Kyllä, aloita alusta"),n=el("button","btn sm","Peruuta");
- nb.onclick=function(){nb.hidden=true;ask.hidden=false;n.focus()};
- n.onclick=function(){ask.hidden=true;nb.hidden=false};
- y.onclick=function(){tcfg.dir=t.dir;tcfg.mode=t.mode;startTest(shuf(t.order))};
- ask.appendChild(y);ask.appendChild(n);h.appendChild(nb);h.appendChild(ask);b.appendChild(h)}
+ box.appendChild(s2);var go=el("button","btn","Aloita testi");go.onclick=function(){var go2=function(){startTest(shuf(rng(d.en.length)))};if(t&&!t.done)confirmBox("Keskeneräinen testi korvataan uudella. Aloitetaanko?","Aloita uusi testi",go2);else go2()};box.appendChild(go);b.appendChild(box)}
+function wrongFlow(d,t){var wrong=[];t.res.forEach(function(r,p){if(r===0)wrong.push(t.order[p])});if(!wrong.length)return;
+ var o=[[d.n[0]+" → "+d.n[1],0],[d.n[1]+" → "+d.n[0],1],["Sekaisin",2]];
+ dialog("Aloitetaanko uusi testi vain väärin menneillä sanoilla ("+wrong.length+")? Nykyinen testi korvataan. Valitse kieli:",
+  o.map(function(x){return{label:x[0],fn:function(){tcfg.dir=x[1];tcfg.mode=t.mode;startTest(shuf(wrong))}}}))}
+function topRow(b,txt,t,showWrong){var h=el("div","r");h.style.marginBottom="10px";h.appendChild(el("span","tl",txt));
+ var nb=el("button","btn sm","Aloita alusta");
+ nb.onclick=function(){confirmBox("Aloitetaanko alusta? Vastaukset nollautuvat.","Kyllä, aloita alusta",function(){tcfg.dir=t.dir;tcfg.mode=t.mode;startTest(shuf(t.order))})};
+ h.appendChild(nb);
+ if(showWrong&&t.res.some(function(r){return r===0})){var wb=el("button","btn sm","Testaa väärät");wb.onclick=function(){wrongFlow(d0(),t)};h.appendChild(wb)}
+ b.appendChild(h)}
+function d0(){return docs[cur]}
 function oneView(b,d){var t=d.test,n=t.order.length,p=t.pos,ok=t.res.filter(function(r){return r===1}).length;
- topRow(b,(p+1)+" / "+n+" · oikein "+ok,t);
- var c=el("div","tq"),checked=t.res[p]!==-1;c.appendChild(el("div","tl",d.n[t.dir]));c.appendChild(el("div","big",tQ(d,t,p)));
+ topRow(b,(p+1)+" / "+n+" · oikein "+ok,t,true);
+ var c=el("div","tq"),checked=t.res[p]!==-1;c.appendChild(el("div","tl",d.n[dirOf(t,p)]));c.appendChild(el("div","big",tQ(d,t,p)));
  var inp=inputFor(t.ans[p]);inp.readOnly=checked;c.appendChild(inp);
  var fb=el("div","fb");if(checked){var g=t.res[p]===1;fb.textContent=g?"Oikein":"Väärin. Oikea vastaus: "+tA(d,t,p);fb.className="fb "+(g?"t-ok":"t-bad")}c.appendChild(fb);
  var go=el("button","btn",checked?(p+1>=n?"Valmis":"Seuraava"):"Tarkista");
@@ -356,7 +374,7 @@ function allView(b,d){var t=d.test,n=t.order.length,ins=[];
  var cnt=null;function upd(){cnt.textContent="Vastattu "+t.ans.filter(function(x){return String(x).trim()}).length+" / "+n}
  topRow(b,"",t);cnt=b.firstChild.firstChild;upd();
  function finish(){for(var p=0;p<n;p++)t.res[p]=tok(t.ans[p]||"",tA(d,t,p))?1:0;t.done=true;tSave(true);window.scrollTo(0,0);renderTest()}
- for(var p=0;p<n;p++){(function(p){var r=el("div","tq");r.appendChild(el("div","tw",tQ(d,t,p)));var i=inputFor(t.ans[p]);
+ for(var p=0;p<n;p++){(function(p){var r=el("div","tq");r.appendChild(el("div","tl",d.n[dirOf(t,p)]));r.appendChild(el("div","tw",tQ(d,t,p)));var i=inputFor(t.ans[p]);
   i.oninput=function(){t.ans[p]=i.value;upd();tSave(false)};
   i.onkeydown=function(e){if(e.key==="Enter"){e.preventDefault();if(ins[p+1])ins[p+1].focus();else finish()}};
   ins.push(i);r.appendChild(i);b.appendChild(r)})(p)}
@@ -364,9 +382,9 @@ function allView(b,d){var t=d.test,n=t.order.length,ins=[];
  var fe=ins.filter(function(i){return !i.value})[0]||ins[0];if(fe)fe.focus()}
 function resultView(b,d){var t=d.test,n=t.order.length,ok=t.res.filter(function(r){return r===1}).length;
  var c=el("div","tq");c.appendChild(el("div","big",ok+" / "+n+" oikein ("+Math.round(ok/n*100)+" %)"));
- var bs=el("div","r"),wrong=[];t.res.forEach(function(r,p){if(r!==1)wrong.push(t.order[p])});
+ var bs=el("div","r"),wrong=[];t.res.forEach(function(r,p){if(r===0)wrong.push(t.order[p])});
  var nw=el("button","btn","Uusi testi");nw.onclick=function(){tSetup=true;renderTest()};bs.appendChild(nw);
- if(wrong.length){var wb=el("button","btn","Testaa väärät uudelleen");wb.onclick=function(){tcfg.dir=t.dir;tcfg.mode=t.mode;startTest(shuf(wrong))};bs.appendChild(wb)}
+ if(wrong.length){var wb=el("button","btn","Testaa väärät uudelleen");wb.onclick=function(){wrongFlow(d,t)};bs.appendChild(wb)}
  c.appendChild(bs);b.appendChild(c);
  rng(n).sort(function(a,z){return (t.res[a]===1)-(t.res[z]===1)||a-z}).forEach(function(p){
   var good=t.res[p]===1,r=el("div","tq");r.appendChild(el("div","tw",(good?"✓ ":"✗ ")+tQ(d,t,p)));
