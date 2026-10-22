@@ -78,7 +78,8 @@ textarea{width:100%;min-height:100px;margin-top:8px}
 <section id="home">
  <h1>Sanalistat</h1>
  <div class="r" style="margin:-6px 4px 12px"><button class="btn sm" id="cp" hidden>Kopioi oma linkki</button></div>
- <input id="hq" class="srch" type="search" placeholder="Hae sanaa kaikista listoista" aria-label="Hae sanaa kaikista listoista" autocomplete="off">
+ <div class="r" style="margin:0 0 6px"><input id="hq" class="srch" style="margin:0;flex:1;min-width:200px" type="search" placeholder="Hae sanaa kaikista listoista" aria-label="Hae sanaa kaikista listoista" autocomplete="off"><input id="sq" class="srch" style="margin:0;flex:1;min-width:200px" type="search" placeholder="Älykäs haku: kuvaile sanaa" aria-label="Älykäs haku, kuvaile sanaa" autocomplete="off"></div>
+ <div class="tl" id="smst" hidden style="margin:0 0 10px"></div>
  <div id="hres" hidden></div>
  <div class="load">
   <div class="r">
@@ -174,7 +175,7 @@ function nat(a,b){var x=String(a).split("."),y=String(b).split(".");
   var n=parseInt(p,10),m=parseInt(r,10);
   if(!isNaN(n)&&!isNaN(m)){if(n!==m)return n-m}else{var c=p.localeCompare(r);if(c)return c}}return 0}
 function home(){
- $("prac").hidden=true;$("test").hidden=true;$("home").hidden=false;cur=null;renderSearch();
+ $("prac").hidden=true;$("test").hidden=true;$("home").hidden=false;cur=null;renderSearch();if(SM.on&&SM.ext)ensureIndex();
  updateBar();var g=$("groups");g.innerHTML="";
  var ids=Object.keys(docs).filter(function(i){return !docs[i].mix});
  if(!ids.length){var p=document.createElement("p");p.className="note";p.textContent="Ei vielä listoja. Lataa ensimmäinen CSV-tiedosto yllä.";g.appendChild(p);return}
@@ -233,12 +234,57 @@ function openMix(mode,idsIn,label){
  if(mode==="shuf")$("shuf").click();else if(mode==="abc")$("abc").click()}
 
 /* ---------- haku ---------- */
-function renderSearch(){var q=($("hq").value||"").trim().toLowerCase(),box=$("hres"),on=q.length>0;
- $("groups").hidden=on;document.querySelector("#home .load").hidden=on;box.hidden=!on;box.innerHTML="";if(!on)return;
+var SM={on:false,ready:false,busy:false,ext:null,emb:{},db:null,items:[]},smTm=null,smTok=0;
+var MODEL="Xenova/multilingual-e5-small",TFURL="https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1";
+function smSt(t){var e=$("smst");e.textContent=t;e.hidden=!t}
+function idbOpen(){return new Promise(function(res,rej){try{var r=indexedDB.open("sanalista-emb-e5s",1);r.onupgradeneeded=function(){r.result.createObjectStore("e")};r.onsuccess=function(){res(r.result)};r.onerror=function(){rej(r.error)}}catch(e){rej(e)}})}
+function idbLoad(db){return new Promise(function(res){var out={};try{var c=db.transaction("e").objectStore("e").openCursor();c.onsuccess=function(){var k=c.result;if(k){out[k.key]=k.value;k.continue()}else res(out)};c.onerror=function(){res(out)}}catch(e){res(out)}})}
+function idbPut(db,obj){return new Promise(function(res){try{var tx=db.transaction("e","readwrite"),st=tx.objectStore("e");Object.keys(obj).forEach(function(k){st.put(obj[k],k)});tx.oncomplete=res;tx.onerror=res}catch(e){res()}})}
+function smItems(){var a=[];sortIds(Object.keys(docs)).forEach(function(id){var d=docs[id];d.en.forEach(function(e,k){a.push({id:id,en:e,fi:d.fi[k],t:e+" = "+d.fi[k]})})});return a}
+async function embed(texts){var o=await SM.ext(texts,{pooling:"mean",normalize:true}),dim=o.dims[1],r=[];for(var i=0;i<texts.length;i++)r.push(o.data.slice(i*dim,(i+1)*dim));return r}
+async function ensureIndex(){if(SM.busy||!SM.ext)return;SM.busy=true;
+ try{SM.items=smItems();var miss=[],seen={};
+  SM.items.forEach(function(x){if(!SM.emb[x.t]&&!seen[x.t]){seen[x.t]=1;miss.push(x.t)}});
+  for(var i=0;i<miss.length;i+=16){var bt=miss.slice(i,i+16),v=await embed(bt.map(function(t){return"passage: "+t})),put={};
+   bt.forEach(function(t,j){SM.emb[t]=v[j];put[t]=v[j]});if(SM.db)await idbPut(SM.db,put);
+   smSt("Indeksoidaan sanoja "+Math.min(i+16,miss.length)+" / "+miss.length)}
+  SM.ready=true;smSt(SM.on?"Älykäs haku valmis":"")}
+ catch(e){smSt("Älykäs haku epäonnistui: "+(e.message||e))}
+ SM.busy=false;renderSearch()}
+async function startSmart(){SM.on=true;
+ try{localStorage.setItem("sanalista_smart","1")}catch(e){}
+ if(SM.ext){ensureIndex();return}
+ try{smSt("Ladataan kielimallia…");var TF=await import(TFURL);
+  try{SM.db=await idbOpen();SM.emb=await idbLoad(SM.db)}catch(e){SM.db=null}
+  SM.ext=await TF.pipeline("feature-extraction",MODEL,{dtype:"q8",progress_callback:function(p){if(p&&p.status==="progress"&&typeof p.progress==="number")smSt("Ladataan kielimallia… "+Math.round(p.progress)+" %")}});
+  await ensureIndex()}
+ catch(e){SM.on=false;smSt("Mallin lataus epäonnistui: "+(e.message||e))}}
+$("sq").onfocus=function(){if(SM.on)return;
+ confirmBox("Älykäs haku lataa kielimallin selaimeesi (noin 100–120 Mt) ensimmäisellä kerralla ja käy sitten sanasi läpi. Se voi kestää minuutin tai pari, ja lataus käyttää mobiilidataa. Jatketaanko?","Lataa ja ota käyttöön",function(){startSmart();$("sq").focus()})};
+function resRow(box,id,en,fi){var b=el("button","res");b.dataset.t=en+" = "+fi;b.appendChild(el("span","c",codeOf(docs[id])||"–"));b.appendChild(el("span","",en));b.appendChild(el("span","",fi));b.onclick=function(){openList(id)};box.appendChild(b)}
+function semSearch(q,box){clearTimeout(smTm);var tok=++smTok;
+ smTm=setTimeout(async function(){
+  try{var qv=(await embed(["query: "+q]))[0],sc=[];
+   SM.items.forEach(function(x){var v=SM.emb[x.t];if(!v)return;var s=0;for(var i=0;i<v.length;i++)s+=v[i]*qv[i];sc.push([s,x])});
+   if(tok!==smTok||!sc.length)return;
+   sc.sort(function(a,b){return b[0]-a[0]});
+   var shown={};box.querySelectorAll(".res").forEach(function(r){shown[r.dataset.t]=1});
+   var th=sc[0][0]-0.08,top=sc.filter(function(a){return a[0]>=th&&!shown[a[1].t]}).slice(0,15);
+   if(!top.length)return;
+   top.forEach(function(a){resRow(box,a[1].id,a[1].en,a[1].fi)})}
+  catch(e){}},400)}
+var act="n";
+function renderSearch(){var qn=($("hq").value||"").trim().toLowerCase(),qm=($("sq").value||"").trim().toLowerCase(),
+ q=act==="s"?qm:qn,box=$("hres"),on=q.length>0;
+ $("groups").hidden=on;document.querySelector("#home .load").hidden=on;box.hidden=!on;box.innerHTML="";smTok++;clearTimeout(smTm);if(!on)return;
+ if(act==="s"){
+  box.appendChild(el("p","tl",SM.ready?"Merkityksen mukaan":(SM.on?"Älykäs haku valmistellaan…":"Älykäs haku ei ole vielä käytössä")));
+  if(SM.ready&&q.length>=2)semSearch(q,box);return}
  var hits=[];sortIds(Object.keys(docs)).forEach(function(id){var d=docs[id];d.en.forEach(function(e,k){if((e+" "+d.fi[k]).toLowerCase().indexOf(q)>=0)hits.push([id,e,d.fi[k]])})});
  box.appendChild(el("p","tl",hits.length?hits.length+" osumaa":"Ei osumia"));
- hits.slice(0,300).forEach(function(h){var b=el("button","res");b.appendChild(el("span","c",codeOf(docs[h[0]])||"–"));b.appendChild(el("span","",h[1]));b.appendChild(el("span","",h[2]));b.onclick=function(){openList(h[0])};box.appendChild(b)})}
-$("hq").oninput=renderSearch;
+ hits.slice(0,300).forEach(function(h){resRow(box,h[0],h[1],h[2])})}
+$("hq").oninput=function(){act="n";$("sq").value="";renderSearch()};
+$("sq").oninput=function(){act="s";$("hq").value="";renderSearch()};
 $("qs").oninput=function(){render()};
 
 /* ---------- lataus ---------- */
@@ -418,5 +464,6 @@ function resultView(b,d){var t=d.test,n=t.order.length,ok=t.res.filter(function(
 $("tst").onclick=function(){flush();openTest()};
 $("tback").onclick=function(){tFlush();$("test").hidden=true;$("prac").hidden=false;render()};
 
+try{if(localStorage.getItem("sanalista_smart"))setTimeout(startSmart,800)}catch(e){}
 init();
 </script></body></html>
