@@ -108,7 +108,8 @@ textarea{width:100%;min-height:100px;margin-top:8px}
 
 <section id="prac" hidden>
  <div class="top"><button class="btn" id="back">← Etusivu</button><strong id="ttl"></strong><span id="sync2"></span></div>
- <div class="r" style="margin:0 0 12px"><button class="ic" id="shuf" title="Sekoita" aria-label="Sekoita"><svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button><button class="ic" id="abc" title="Aakkosjärjestys" aria-label="Aakkosjärjestys"><svg viewBox="0 0 24 24"><path d="M6 4v16m0 0-4-4m4 4 4-4"/><path d="M15 9V6.5a2.5 2.5 0 0 1 5 0V9m-5-2h5M15 20l2.5-5 2.5 5m-4-1.5h3" style="stroke-width:1.6"/></svg></button><button class="ic" id="tgl" title="Piilota kaikki" aria-label="Piilota kaikki"><svg viewBox="0 0 24 24"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg></button><button class="btn" id="tst">Testi</button><input id="qs" type="search" placeholder="Hae listasta" aria-label="Hae sanaa listasta" autocomplete="off" style="flex:1;min-width:140px"></div>
+ <div class="r" style="margin:0 0 12px"><button class="ic" id="shuf" title="Sekoita" aria-label="Sekoita"><svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button><button class="ic" id="abc" title="Aakkosjärjestys" aria-label="Aakkosjärjestys"><svg viewBox="0 0 24 24"><path d="M6 4v16m0 0-4-4m4 4 4-4"/><path d="M15 9V6.5a2.5 2.5 0 0 1 5 0V9m-5-2h5M15 20l2.5-5 2.5 5m-4-1.5h3" style="stroke-width:1.6"/></svg></button><button class="ic" id="tgl" title="Piilota kaikki" aria-label="Piilota kaikki"><svg viewBox="0 0 24 24"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg></button><button class="btn" id="tst">Testi</button><input id="qs" type="search" placeholder="Hae listasta" aria-label="Hae sanaa listasta" autocomplete="off" style="flex:1;min-width:140px"><input id="qm" type="search" placeholder="Älykäs haku: kuvaile sanaa" aria-label="Älykäs haku listasta" autocomplete="off" style="flex:1;min-width:140px"></div>
+ <div class="tl" id="qmst" hidden style="margin:-4px 0 10px"></div>
  <div class="wrap"><div class="grid">
   <div class="head">
    <div><span id="n0">English</span> <button class="ic" id="hEn" title="Piilota / näytä englanti" aria-label="Piilota tai näytä englanti"><svg viewBox="0 0 24 24"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/><path d="M3 21 21 3"/></svg></button></div>
@@ -250,7 +251,7 @@ async function ensureIndex(){if(SM.busy||!SM.ext)return;SM.busy=true;
    smSt("Indeksoidaan sanoja "+Math.min(i+16,miss.length)+" / "+miss.length)}
   SM.ready=true;smSt(SM.on?"Älykäs haku valmis":"")}
  catch(e){smSt("Älykäs haku epäonnistui: "+(e.message||e))}
- SM.busy=false;renderSearch()}
+ SM.busy=false;renderSearch();if(cur&&$("qm").value)runQm()}
 async function startSmart(){SM.on=true;
  try{localStorage.setItem("sanalista_smart","1")}catch(e){}
  if(SM.ext){ensureIndex();return}
@@ -259,8 +260,10 @@ async function startSmart(){SM.on=true;
   SM.ext=await TF.pipeline("feature-extraction",MODEL,{dtype:"q8",progress_callback:function(p){if(p&&p.status==="progress"&&typeof p.progress==="number")smSt("Ladataan kielimallia… "+Math.round(p.progress)+" %")}});
   await ensureIndex()}
  catch(e){SM.on=false;smSt("Mallin lataus epäonnistui: "+(e.message||e))}}
-$("sq").onfocus=function(){if(SM.on)return;
- confirmBox("Älykäs haku lataa kielimallin selaimeesi (noin 100–120 Mt) ensimmäisellä kerralla ja käy sitten sanasi läpi. Se voi kestää minuutin tai pari, ja lataus käyttää mobiilidataa. Jatketaanko?","Lataa ja ota käyttöön",function(){startSmart();$("sq").focus()})};
+function smartAsk(id){if(SM.on)return;
+ confirmBox("Älykäs haku lataa kielimallin selaimeesi (noin 100–120 Mt) ensimmäisellä kerralla ja käy sitten sanasi läpi. Se voi kestää minuutin tai pari, ja lataus käyttää mobiilidataa. Jatketaanko?","Lataa ja ota käyttöön",function(){startSmart();$(id).focus()})}
+$("sq").onfocus=function(){smartAsk("sq")};
+$("qm").onfocus=function(){smartAsk("qm")};
 function resRow(box,id,en,fi){var b=el("button","res");b.dataset.t=en+" = "+fi;b.appendChild(el("span","c",codeOf(docs[id])||"–"));b.appendChild(el("span","",en));b.appendChild(el("span","",fi));b.onclick=function(){openList(id)};box.appendChild(b)}
 function semSearch(q,box){clearTimeout(smTm);var tok=++smTok;
  smTm=setTimeout(async function(){
@@ -285,7 +288,23 @@ function renderSearch(){var qn=($("hq").value||"").trim().toLowerCase(),qm=($("s
  hits.slice(0,300).forEach(function(h){resRow(box,h[0],h[1],h[2])})}
 $("hq").oninput=function(){act="n";$("sq").value="";renderSearch()};
 $("sq").oninput=function(){act="s";$("hq").value="";renderSearch()};
-$("qs").oninput=function(){render()};
+$("qs").oninput=function(){if($("qm").value){$("qm").value="";smF=null;$("qmst").hidden=true}render()};
+
+/* ---------- älykäs haku listan sisällä ---------- */
+var smF=null,qmTm=null,qmTok=0;
+function runQm(){var q=($("qm").value||"").trim(),st=$("qmst");clearTimeout(qmTm);var tok=++qmTok;
+ if(q.length<2){smF=null;st.hidden=true;render();return}
+ if(!SM.ready){smF=null;st.textContent=SM.on?"Älykäs haku valmistellaan…":"Älykäs haku ei ole vielä käytössä";st.hidden=false;render();return}
+ qmTm=setTimeout(async function(){
+  try{var d=docs[cur],qv=(await embed(["query: "+q]))[0],sc=[];
+   d.en.forEach(function(e,i){var v=SM.emb[e+" = "+d.fi[i]];if(!v)return;var s=0;for(var k=0;k<v.length;k++)s+=v[k]*qv[k];sc.push([s,i])});
+   if(tok!==qmTok)return;
+   if(!sc.length){smF=null;st.textContent="Sanoja ei ole vielä indeksoitu";st.hidden=false;render();return}
+   sc.sort(function(a,b){return b[0]-a[0]});var th=sc[0][0]-0.08;
+   smF=sc.filter(function(a){return a[0]>=th}).slice(0,15).map(function(a){return a[1]});
+   st.textContent="Merkityksen mukaan";st.hidden=false;render()}
+  catch(e){}},400)}
+$("qm").oninput=function(){$("qs").value="";runQm()};
 
 /* ---------- lataus ---------- */
 function parse(text){
@@ -346,7 +365,7 @@ function openList(id){
  rows=ord.map(function(i){return{i:i,h:[!!hE[i],!!hF[i]]}});colHid=[!!d.cEn,!!d.cFi];
  $("n0").textContent=d.n[0];$("n1").textContent=d.n[1];
  $("ttl").textContent=d.mix?d.name:(codeOf(d)||"")+"  "+(d.name||"");
- $("home").hidden=true;$("test").hidden=true;$("prac").hidden=false;$("qs").value="";window.scrollTo(0,0);render()}
+ $("home").hidden=true;$("test").hidden=true;$("prac").hidden=false;$("qs").value="";$("qm").value="";smF=null;$("qmst").hidden=true;window.scrollTo(0,0);render()}
 function changed(){clearTimeout(tm);tm=setTimeout(flush,500)}
 function flush(){if(!tm||!cur)return;clearTimeout(tm);tm=null;var d=docs[cur];
  d.order=rows.map(function(r){return r.i});
@@ -356,7 +375,8 @@ function flush(){if(!tm||!cur)return;clearTimeout(tm);tm=null;var d=docs[cur];
 document.addEventListener("visibilitychange",function(){if(document.hidden)flush()});
 function render(){var d=docs[cur],box=$("rows");box.innerHTML="";
  var qf=($("qs").value||"").trim().toLowerCase();
- rows.forEach(function(r){if(qf&&(d.en[r.i]+" "+d.fi[r.i]).toLowerCase().indexOf(qf)<0)return;var el=document.createElement("div");el.className="row";
+ var list=rows;if(smF){var by={};rows.forEach(function(r){by[r.i]=r});list=smF.map(function(i){return by[i]}).filter(Boolean)}
+ list.forEach(function(r){if(qf&&(d.en[r.i]+" "+d.fi[r.i]).toLowerCase().indexOf(qf)<0)return;var el=document.createElement("div");el.className="row";
   [0,1].forEach(function(c){var b=document.createElement("button");b.className="cell"+(r.h[c]?" hid":"");
    var s=document.createElement("span");s.textContent=(c?d.fi:d.en)[r.i];b.appendChild(s);
    b.setAttribute("aria-pressed",r.h[c]?"true":"false");b.dataset.k=r.i+"-"+c;
