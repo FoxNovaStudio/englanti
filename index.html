@@ -79,7 +79,7 @@ mark.hl{background:#ffd54a;color:#2b2a26;border-radius:3px;padding:0 1px}
 <section id="home">
  <h1>Sanalistat</h1>
  <div class="r" style="margin:-6px 4px 12px"><button class="btn sm" id="cp" hidden>Kopioi oma linkki</button></div>
- <div class="r" style="margin:0 0 6px"><input id="hq" class="srch" style="margin:0;flex:1;min-width:200px" type="search" placeholder="Hae sanaa kaikista listoista" aria-label="Hae sanaa kaikista listoista" autocomplete="off"><input id="sq" class="srch" style="margin:0;flex:1;min-width:200px" type="search" placeholder="Älykäs haku: kuvaile sanaa" aria-label="Älykäs haku, kuvaile sanaa" autocomplete="off"></div>
+ <div class="r" style="margin:0 0 6px"><input id="hq" class="srch" style="margin:0;flex:1;min-width:200px" type="search" title="Välilyönti alussa hakee vain sanojen alusta" placeholder="Hae sanaa kaikista listoista" aria-label="Hae sanaa kaikista listoista" autocomplete="off"><input id="sq" class="srch" style="margin:0;flex:1;min-width:200px" type="search" placeholder="Älykäs haku: kuvaile sanaa" aria-label="Älykäs haku, kuvaile sanaa" autocomplete="off"></div>
  <div class="tl" id="smst" hidden style="margin:0 0 10px"></div>
  <button class="btn sm" id="smup" hidden style="margin:0 0 10px">Vaihda tarkempaan malliin</button>
  <div id="hres" hidden></div>
@@ -110,7 +110,7 @@ mark.hl{background:#ffd54a;color:#2b2a26;border-radius:3px;padding:0 1px}
 
 <section id="prac" hidden>
  <div class="top"><button class="btn" id="back">← Etusivu</button><strong id="ttl"></strong><span id="sync2"></span></div>
- <div class="r" style="margin:0 0 12px"><button class="ic" id="shuf" title="Sekoita" aria-label="Sekoita"><svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button><button class="ic" id="abc" title="Aakkosjärjestys" aria-label="Aakkosjärjestys"><svg viewBox="0 0 24 24"><path d="M6 4v16m0 0-4-4m4 4 4-4"/><path d="M15 9V6.5a2.5 2.5 0 0 1 5 0V9m-5-2h5M15 20l2.5-5 2.5 5m-4-1.5h3" style="stroke-width:1.6"/></svg></button><button class="ic" id="tgl" title="Piilota kaikki" aria-label="Piilota kaikki"><svg viewBox="0 0 24 24"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg></button><button class="btn" id="tst">Testi</button><input id="qs" type="search" placeholder="Hae listasta" aria-label="Hae sanaa listasta" autocomplete="off" style="flex:1;min-width:140px"><input id="qm" type="search" placeholder="Älykäs haku: kuvaile sanaa" aria-label="Älykäs haku listasta" autocomplete="off" style="flex:1;min-width:140px"></div>
+ <div class="r" style="margin:0 0 12px"><button class="ic" id="shuf" title="Sekoita" aria-label="Sekoita"><svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button><button class="ic" id="abc" title="Aakkosjärjestys" aria-label="Aakkosjärjestys"><svg viewBox="0 0 24 24"><path d="M6 4v16m0 0-4-4m4 4 4-4"/><path d="M15 9V6.5a2.5 2.5 0 0 1 5 0V9m-5-2h5M15 20l2.5-5 2.5 5m-4-1.5h3" style="stroke-width:1.6"/></svg></button><button class="ic" id="tgl" title="Piilota kaikki" aria-label="Piilota kaikki"><svg viewBox="0 0 24 24"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg></button><button class="btn" id="tst">Testi</button><input id="qs" type="search" title="Välilyönti alussa hakee vain sanojen alusta" placeholder="Hae listasta" aria-label="Hae sanaa listasta" autocomplete="off" style="flex:1;min-width:140px"><input id="qm" type="search" placeholder="Älykäs haku: kuvaile sanaa" aria-label="Älykäs haku listasta" autocomplete="off" style="flex:1;min-width:140px"></div>
  <div class="r" id="qmst" hidden style="margin:-4px 0 10px"><span class="tl" id="qmt" style="margin:0"></span><button class="btn sm" id="qmore">Näytä lisää</button></div>
  <div class="wrap"><div class="grid">
   <div class="head">
@@ -257,7 +257,7 @@ async function ensureIndex(){if(SM.busy||!SM.ext)return;SM.busy=true;
   SM.items.forEach(function(x){[x.t,x.en,x.fi].forEach(function(t){if(!SM.emb[t]&&!seen[t]){seen[t]=1;miss.push(t)}})});
   for(var i=0;i<miss.length;i+=16){var bt=miss.slice(i,i+16),v=await embed(bt.map(function(t){return"passage: "+t})),put={};
    bt.forEach(function(t,j){SM.emb[t]=v[j];put[t]=v[j]});if(SM.db)await idbPut(SM.db,put);
-   smSt("Indeksoidaan sanoja "+Math.min(i+16,miss.length)+" / "+miss.length)}
+   smSt("Indeksoidaan sanoja… "+Math.round(Math.min(i+16,miss.length)/miss.length*100)+" %")}
   SM.ready=true;smSt(SM.on?"Älykäs haku valmis":"")}
  catch(e){smSt("Älykäs haku epäonnistui: "+(e.message||e))}
  SM.busy=false;renderSearch();if(cur&&$("qm").value)runQm()}
@@ -277,12 +277,14 @@ $("sq").onfocus=function(){smartAsk("sq")};
 $("qm").onfocus=function(){smartAsk("qm")};
 $("smup").onclick=function(){confirmBox("Vaihdetaanko tarkempaan malliin (noin 280 Mt)? Sanat indeksoidaan uudelleen, ja se voi kestää hetken.","Vaihda malli",function(){
  SM.ext=null;SM.ready=false;SM.on=false;SM.emb={};SM.db=null;SM.items=[];SM.busy=false;startSmart("b")})};
-function hl(node,text,q){node.textContent="";
+function nextHit(lt,q,i,ws){var j;while((j=lt.indexOf(q,i))>=0){if(!ws||j===0||!/[\p{L}\p{N}]/u.test(lt[j-1]))return j;i=j+1}return -1}
+function matches(en,fi,q,ws){return ws?(nextHit(en.toLowerCase(),q,0,true)>=0||nextHit(fi.toLowerCase(),q,0,true)>=0):(en+" "+fi).toLowerCase().indexOf(q)>=0}
+function hl(node,text,q,ws){node.textContent="";
  if(!q){node.textContent=text;return}
  var lt=text.toLowerCase(),i=0,j;
- while((j=lt.indexOf(q,i))>=0){if(j>i)node.appendChild(document.createTextNode(text.slice(i,j)));node.appendChild(el("mark","hl",text.slice(j,j+q.length)));i=j+q.length}
+ while((j=nextHit(lt,q,i,ws))>=0){if(j>i)node.appendChild(document.createTextNode(text.slice(i,j)));node.appendChild(el("mark","hl",text.slice(j,j+q.length)));i=j+q.length}
  if(i<text.length)node.appendChild(document.createTextNode(text.slice(i)))}
-function resRow(box,id,en,fi,q){var b=el("button","res");b.dataset.t=en+" = "+fi;b.appendChild(el("span","c",codeOf(docs[id])||"–"));var a1=el("span",""),a2=el("span","");hl(a1,en,q);hl(a2,fi,q);b.appendChild(a1);b.appendChild(a2);b.onclick=function(){openList(id)};box.appendChild(b)}
+function resRow(box,id,en,fi,q,ws){var b=el("button","res");b.dataset.t=en+" = "+fi;b.appendChild(el("span","c",codeOf(docs[id])||"–"));var a1=el("span",""),a2=el("span","");hl(a1,en,q,ws);hl(a2,fi,q,ws);b.appendChild(a1);b.appendChild(a2);b.onclick=function(){openList(id)};box.appendChild(b)}
 function semSearch(q,box){clearTimeout(smTm);var tok=++smTok;
  smTm=setTimeout(async function(){
   try{var qv=(await embed(["query: "+q]))[0],sc=[];
@@ -297,15 +299,15 @@ function semSearch(q,box){clearTimeout(smTm);var tok=++smTok;
    draw()}
   catch(e){}},400)}
 var act="n";
-function renderSearch(){var qn=($("hq").value||"").trim().toLowerCase(),qm=($("sq").value||"").trim().toLowerCase(),
+function renderSearch(){var ws=/^\s+\S/.test($("hq").value||""),qn=($("hq").value||"").trim().toLowerCase(),qm=($("sq").value||"").trim().toLowerCase(),
  q=act==="s"?qm:qn,box=$("hres"),on=q.length>0;
  $("groups").hidden=on;document.querySelector("#home .load").hidden=on;box.hidden=!on;box.innerHTML="";smTok++;clearTimeout(smTm);if(!on)return;
  if(act==="s"){
   box.appendChild(el("p","tl",SM.ready?"Merkityksen mukaan":(SM.on?"Älykäs haku valmistellaan…":"Älykäs haku ei ole vielä käytössä")));
   if(SM.ready&&q.length>=2)semSearch(q,box);return}
- var hits=[];sortIds(Object.keys(docs)).forEach(function(id){var d=docs[id];d.en.forEach(function(e,k){if((e+" "+d.fi[k]).toLowerCase().indexOf(q)>=0)hits.push([id,e,d.fi[k]])})});
+ var hits=[];sortIds(Object.keys(docs)).forEach(function(id){var d=docs[id];d.en.forEach(function(e,k){if(matches(e,d.fi[k],q,ws))hits.push([id,e,d.fi[k]])})});
  box.appendChild(el("p","tl",hits.length?hits.length+" osumaa":"Ei osumia"));
- hits.slice(0,300).forEach(function(h){resRow(box,h[0],h[1],h[2],q)})}
+ hits.slice(0,300).forEach(function(h){resRow(box,h[0],h[1],h[2],q,ws)})}
 $("hq").oninput=function(){act="n";$("sq").value="";renderSearch()};
 $("sq").oninput=function(){act="s";$("hq").value="";renderSearch()};
 $("qs").oninput=function(){if($("qm").value){$("qm").value="";smF=null;$("qmst").hidden=true}render()};
@@ -395,11 +397,11 @@ function flush(){if(!tm||!cur)return;clearTimeout(tm);tm=null;var d=docs[cur];
  d.cEn=colHid[0];d.cFi=colHid[1];d.ts=Date.now();persist(cur)}
 document.addEventListener("visibilitychange",function(){if(document.hidden)flush()});
 function render(){var d=docs[cur],box=$("rows");box.innerHTML="";
- var qf=($("qs").value||"").trim().toLowerCase();
+ var qws=/^\s+\S/.test($("qs").value||""),qf=($("qs").value||"").trim().toLowerCase();
  var list=rows;if(smF){var by={};rows.forEach(function(r){by[r.i]=r});list=smF.map(function(i){return by[i]}).filter(Boolean)}
- list.forEach(function(r){if(qf&&(d.en[r.i]+" "+d.fi[r.i]).toLowerCase().indexOf(qf)<0)return;var el=document.createElement("div");el.className="row";
+ list.forEach(function(r){if(qf&&!matches(d.en[r.i],d.fi[r.i],qf,qws))return;var el=document.createElement("div");el.className="row";
   [0,1].forEach(function(c){var b=document.createElement("button");b.className="cell"+(r.h[c]?" hid":"");
-   var s=document.createElement("span");var tx=(c?d.fi:d.en)[r.i];if(qf&&!r.h[c])hl(s,tx,qf);else s.textContent=tx;b.appendChild(s);
+   var s=document.createElement("span");var tx=(c?d.fi:d.en)[r.i];if(qf&&!r.h[c])hl(s,tx,qf,qws);else s.textContent=tx;b.appendChild(s);
    b.setAttribute("aria-pressed",r.h[c]?"true":"false");b.dataset.k=r.i+"-"+c;
    b.onclick=function(){r.h[c]=!r.h[c];render();var f=box.querySelector('[data-k="'+r.i+"-"+c+'"]');if(f)f.focus();changed()};
    el.appendChild(b)});box.appendChild(el)});updTgl()}
